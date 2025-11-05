@@ -28,6 +28,17 @@ export const ConsensusProvider = ({ children }) => {
   const [speed, setSpeed] = useState(1); // 1x speed by default
   const [logs, setLogs] = useState([]);
 
+  // Voting state
+  const [votingHistory, setVotingHistory] = useState([]);
+  const [currentRoundVotes, setCurrentRoundVotes] =
+    useState(null);
+  const [showVotingDetails, setShowVotingDetails] =
+    useState(true);
+  const [showVotingHistory, setShowVotingHistory] =
+    useState(false);
+  const [selectedRoundForDetails, setSelectedRoundForDetails] =
+    useState(null);
+
   useEffect(() => {
     const initialNodes = initializeNetwork(
       config.network.nodeCount,
@@ -56,6 +67,9 @@ export const ConsensusProvider = ({ children }) => {
     setSafety(true);
     setIsRunning(false);
     setLogs([]);
+    setVotingHistory([]);
+    setCurrentRoundVotes(null);
+    setSelectedRoundForDetails(null);
     addLog("Network reset successfully", "info");
   };
 
@@ -69,6 +83,9 @@ export const ConsensusProvider = ({ children }) => {
     setLiveness(true);
     setSafety(true);
     setIsRunning(false);
+    setVotingHistory([]);
+    setCurrentRoundVotes(null);
+    setSelectedRoundForDetails(null);
     addLog(
       `Configuration "${newConfig.name}" applied`,
       "success"
@@ -84,12 +101,56 @@ export const ConsensusProvider = ({ children }) => {
     setLogs((prev) => [...prev, { message, type, timestamp }]);
   };
 
+  const trackVote = (nodeId, vote, phase) => {
+    if (currentRoundVotes) {
+      setCurrentRoundVotes((prev) => {
+        const updated = { ...prev };
+        if (phase === "prevote") {
+          updated.prevotesReceived[nodeId] = vote;
+        } else if (phase === "precommit") {
+          updated.precommitsReceived[nodeId] = vote;
+        }
+        return updated;
+      });
+    }
+  };
+
+  const updateCurrentRoundVotes = (votingRound) => {
+    setCurrentRoundVotes(votingRound);
+  };
+
+  const finalizeRound = (votingRound) => {
+    setVotingHistory((prev) => [...prev, votingRound]);
+    setCurrentRoundVotes(null);
+  };
+
+  const toggleVotingDetails = () => {
+    setShowVotingDetails((prev) => !prev);
+  };
+
+  const toggleVotingHistory = () => {
+    setShowVotingHistory((prev) => !prev);
+  };
+
+  const selectRoundForDetails = (round) => {
+    setSelectedRoundForDetails(round);
+  };
+
   useEffect(() => {
     if (!isRunning) return;
     const baseDelay = config.consensus.roundTimeout || 1500; // Use config or default
     const interval = setInterval(() => {
-      const { updatedNodes, newBlock, newLiveness, newSafety } =
-        simulateConsensusStep(nodes, blocks, config);
+      const {
+        updatedNodes,
+        newBlock,
+        newLiveness,
+        newSafety,
+        votingRound,
+      } = simulateConsensusStep(nodes, blocks, config, {
+        updateCurrentRoundVotes,
+        finalizeRound,
+        addLog,
+      });
       setNodes(updatedNodes);
       if (newBlock) {
         setBlocks((prev) => [...prev, newBlock]);
@@ -97,6 +158,32 @@ export const ConsensusProvider = ({ children }) => {
           `Block #${newBlock.height} proposed by Node ${newBlock.proposer}`,
           "block"
         );
+
+        // Log voting results
+        if (votingRound) {
+          addLog(
+            `Prevotes: ${votingRound.prevoteCount}/${
+              Object.keys(votingRound.prevotesReceived).length
+            } (Threshold ${
+              votingRound.prevoteThresholdMet ? "MET" : "NOT MET"
+            })`,
+            votingRound.prevoteThresholdMet
+              ? "success"
+              : "warning"
+          );
+          addLog(
+            `Precommits: ${votingRound.precommitCount}/${
+              Object.keys(votingRound.precommitsReceived).length
+            } (Threshold ${
+              votingRound.precommitThresholdMet
+                ? "MET"
+                : "NOT MET"
+            })`,
+            votingRound.precommitThresholdMet
+              ? "success"
+              : "warning"
+          );
+        }
       }
       setRound((prev) => prev + 1);
 
@@ -155,12 +242,23 @@ export const ConsensusProvider = ({ children }) => {
         isRunning,
         speed,
         logs,
+        votingHistory,
+        currentRoundVotes,
+        showVotingDetails,
+        showVotingHistory,
+        selectedRoundForDetails,
         startConsensus,
         stopConsensus,
         resetNetwork,
         changeSpeed,
         addLog,
         loadNewConfig,
+        trackVote,
+        updateCurrentRoundVotes,
+        finalizeRound,
+        toggleVotingDetails,
+        toggleVotingHistory,
+        selectRoundForDetails,
       }}
     >
       {children}

@@ -13,6 +13,9 @@ export default function Controls() {
     resetNetwork,
     changeSpeed,
     loadNewConfig,
+    toggleVotingDetails,
+    toggleVotingHistory,
+    showVotingDetails,
   } = useConsensus();
 
   const [showConfigPanel, setShowConfigPanel] = useState(false);
@@ -56,6 +59,24 @@ export default function Controls() {
             className="config-btn"
           >
             ⚙️ Configuration
+          </button>
+          <button
+            onClick={toggleVotingHistory}
+            className="voting-history-btn"
+            title="View voting history"
+          >
+            📊 Voting History
+          </button>
+          <button
+            onClick={toggleVotingDetails}
+            className={`voting-toggle-btn ${
+              showVotingDetails ? "active" : ""
+            }`}
+            title="Toggle voting breakdown display"
+          >
+            {showVotingDetails
+              ? "👁️ Hide Votes"
+              : "👁️ Show Votes"}
           </button>
         </div>
 

@@ -1,5 +1,21 @@
 // src/utils/tendermintLogic.js
 
+/**
+ * VotingRound data structure for tracking consensus voting
+ * @typedef {Object} VotingRound
+ * @property {number} roundNumber - The round number
+ * @property {number} roundHeight - The block height
+ * @property {number} proposerId - The proposer node ID
+ * @property {Object} prevotesReceived - Map of nodeId -> vote (true/false/null)
+ * @property {Object} precommitsReceived - Map of nodeId -> vote (true/false/null)
+ * @property {number} timestamp - When the round started
+ * @property {string} result - 'approved', 'rejected', or 'pending'
+ * @property {number} prevoteCount - Number of prevotes received
+ * @property {number} precommitCount - Number of precommits received
+ * @property {boolean} prevoteThresholdMet - Whether 2/3+ prevotes achieved
+ * @property {boolean} precommitThresholdMet - Whether 2/3+ precommits achieved
+ */
+
 export function getNextProposer(nodes, round) {
   // Get only online, non-byzantine nodes for proposer selection
   const eligibleNodes = nodes.filter(
@@ -102,4 +118,99 @@ export function voteOnBlock(nodes, block, config) {
     approved,
     byzantineDetected,
   };
+}
+
+/**
+ * Create a VotingRound object for tracking consensus rounds
+ */
+export function createVotingRound(
+  roundNumber,
+  roundHeight,
+  proposerId,
+  nodes
+) {
+  const prevotesReceived = {};
+  const precommitsReceived = {};
+
+  // Initialize all nodes with null votes
+  nodes.forEach((node) => {
+    prevotesReceived[node.id] = null;
+    precommitsReceived[node.id] = null;
+  });
+
+  return {
+    roundNumber,
+    roundHeight,
+    proposerId,
+    prevotesReceived,
+    precommitsReceived,
+    timestamp: Date.now(),
+    result: "pending",
+    prevoteCount: 0,
+    precommitCount: 0,
+    prevoteThresholdMet: false,
+    precommitThresholdMet: false,
+  };
+}
+
+/**
+ * Update voting round with prevotes
+ */
+export function updatePrevotes(
+  votingRound,
+  votes,
+  voteThreshold
+) {
+  votes.forEach(({ nodeId, vote }) => {
+    votingRound.prevotesReceived[nodeId] = vote;
+  });
+
+  const validPrevotes = Object.values(
+    votingRound.prevotesReceived
+  ).filter((v) => v !== null);
+  const yesPrevotes = validPrevotes.filter(
+    (v) => v === true
+  ).length;
+
+  votingRound.prevoteCount = yesPrevotes;
+  votingRound.prevoteThresholdMet =
+    validPrevotes.length > 0 &&
+    yesPrevotes / validPrevotes.length >= voteThreshold;
+
+  return votingRound;
+}
+
+/**
+ * Update voting round with precommits
+ */
+export function updatePrecommits(
+  votingRound,
+  votes,
+  voteThreshold
+) {
+  votes.forEach(({ nodeId, vote }) => {
+    votingRound.precommitsReceived[nodeId] = vote;
+  });
+
+  const validPrecommits = Object.values(
+    votingRound.precommitsReceived
+  ).filter((v) => v !== null);
+  const yesPrecommits = validPrecommits.filter(
+    (v) => v === true
+  ).length;
+
+  votingRound.precommitCount = yesPrecommits;
+  votingRound.precommitThresholdMet =
+    validPrecommits.length > 0 &&
+    yesPrecommits / validPrecommits.length >= voteThreshold;
+
+  return votingRound;
+}
+
+/**
+ * Finalize voting round with result
+ */
+export function finalizeVotingRound(votingRound, approved) {
+  votingRound.result = approved ? "approved" : "rejected";
+  return votingRound;
 }

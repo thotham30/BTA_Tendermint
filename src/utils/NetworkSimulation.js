@@ -3,6 +3,10 @@ import {
   getNextProposer,
   createBlock,
   voteOnBlock,
+  createVotingRound,
+  updatePrevotes,
+  updatePrecommits,
+  finalizeVotingRound,
 } from "./tendermintLogic";
 
 export function initializeNetwork(nodeCount, config) {
@@ -23,7 +27,12 @@ export function initializeNetwork(nodeCount, config) {
   });
 }
 
-export function simulateConsensusStep(nodes, blocks, config) {
+export function simulateConsensusStep(
+  nodes,
+  blocks,
+  config,
+  consensusContext
+) {
   const round = blocks.length;
   const proposerNode = getNextProposer(nodes, round);
 
@@ -51,12 +60,40 @@ export function simulateConsensusStep(nodes, blocks, config) {
   // Step 1: proposer creates block
   const block = createBlock(proposerNode.id, round + 1, config);
 
-  // Step 2: simulate votes with network conditions
-  const { approved, byzantineDetected } = voteOnBlock(
-    updatedNodes,
-    block,
-    config
+  // Create voting round to track votes
+  const votingRound = createVotingRound(
+    round + 1,
+    round + 1,
+    proposerNode.id,
+    updatedNodes
   );
+
+  // Step 2: simulate prevote phase
+  const prevoteResult = voteOnBlock(updatedNodes, block, config);
+  updatePrevotes(
+    votingRound,
+    prevoteResult.votes,
+    config?.consensus?.voteThreshold || 2 / 3
+  );
+
+  // Step 3: simulate precommit phase (only if prevote passed)
+  const precommitResult = votingRound.prevoteThresholdMet
+    ? voteOnBlock(updatedNodes, block, config)
+    : {
+        votes: prevoteResult.votes.map((v) => ({
+          ...v,
+          vote: null,
+        })),
+        approved: false,
+      };
+
+  updatePrecommits(
+    votingRound,
+    precommitResult.votes,
+    config?.consensus?.voteThreshold || 2 / 3
+  );
+
+  const { approved, byzantineDetected } = precommitResult;
 
   let newBlock = null;
   let newLiveness = true;
@@ -65,8 +102,13 @@ export function simulateConsensusStep(nodes, blocks, config) {
   // Simulate packet loss affecting consensus
   const packetLossOccurred = Math.random() * 100 < packetLoss;
 
-  if (approved && !packetLossOccurred) {
+  if (
+    approved &&
+    votingRound.precommitThresholdMet &&
+    !packetLossOccurred
+  ) {
     newBlock = block;
+    finalizeVotingRound(votingRound, true);
     updatedNodes.forEach((n) => {
       if (n.isOnline) {
         n.state = "Committed";
@@ -89,6 +131,7 @@ export function simulateConsensusStep(nodes, blocks, config) {
     newSafety =
       Math.random() > safetyFailureRate || !byzantineDetected;
 
+    finalizeVotingRound(votingRound, false);
     updatedNodes.forEach((n) => {
       if (n.isOnline) {
         n.state = "Timeout";
@@ -97,5 +140,19 @@ export function simulateConsensusStep(nodes, blocks, config) {
     });
   }
 
-  return { updatedNodes, newBlock, newLiveness, newSafety };
+  // Update consensus context with voting data if available
+  if (consensusContext?.updateCurrentRoundVotes) {
+    consensusContext.updateCurrentRoundVotes(votingRound);
+  }
+  if (consensusContext?.finalizeRound) {
+    consensusContext.finalizeRound(votingRound);
+  }
+
+  return {
+    updatedNodes,
+    newBlock,
+    newLiveness,
+    newSafety,
+    votingRound,
+  };
 }
