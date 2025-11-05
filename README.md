@@ -1,248 +1,306 @@
 # Tendermint Protocol Visualizer
 
-A web-based interactive visualization tool for understanding the Tendermint consensus algorithm. This educational project demonstrates how distributed nodes reach consensus while maintaining safety and liveness properties.
+An interactive web-based visualization tool for understanding and demonstrating the Tendermint consensus protocol, featuring real-time simulation of Byzantine fault-tolerant consensus with configurable network conditions and Byzantine node behaviors.
 
-## 🚀 Quick Start
+## Overview
+
+This project provides a comprehensive educational and testing platform for the Tendermint Byzantine Fault Tolerant (BFT) consensus protocol. It simulates a network of validator nodes reaching consensus through multiple rounds of voting (prevote and precommit phases) while visualizing liveness and safety properties in real-time.
+
+### Key Features
+
+#### 1. **Consensus Simulation**
+
+- **Two-Phase Voting**: Implements Tendermint's prevote and precommit voting phases
+- **Round-Based Consensus**: Simulates multiple consensus rounds with rotating proposers
+- **Block Creation**: Proposers create blocks with configurable transaction counts
+- **Vote Threshold**: Configurable voting thresholds (default: 2/3+ majority)
+- **Proposer Rotation**: Fair round-robin proposer selection among eligible nodes
+
+#### 2. **Byzantine Fault Tolerance**
+
+- **Byzantine Node Simulation**: Support for multiple Byzantine node types:
+  - **Faulty**: Votes randomly on proposals
+  - **Equivocator**: Sends conflicting votes to different nodes
+  - **Silent**: Refuses to participate in voting
+- **Byzantine Limit**: Enforces n/3 Byzantine fault tolerance guarantee
+- **Visual Distinction**: Byzantine nodes displayed in red for easy identification
+
+#### 3. **Timeout Mechanism**
+
+- **Round Timeouts**: Configurable timeout duration for consensus rounds
+- **Exponential Backoff**: Automatic timeout escalation on consecutive failures
+- **Timeout Statistics**: Track timeout occurrences and escalation levels
+- **Timeout Visualization**: Real-time display of timeout progress and history
+- **Adaptive Timeouts**: Multiplier-based timeout increases (default: 1.5x)
+
+#### 4. **Network Conditions**
+
+- **Configurable Latency**: Simulate network delays (0-5000ms)
+- **Packet Loss**: Simulate unreliable networks (0-100% packet loss)
+- **Node Downtime**: Random node unavailability (0-100% downtime)
+- **Response Variance**: Variable node response times
+
+#### 5. **Voting Visualization**
+
+- **Voting Breakdown**: Detailed view of prevotes and precommits per round
+- **Voting History**: Historical record of all consensus rounds
+- **Vote Tracking**: Individual node voting behavior visualization
+- **Voting Statistics**: Aggregated metrics on voting patterns
+- **Round Details**: Expandable view for examining specific rounds
+
+#### 6. **Liveness & Safety Monitoring**
+
+- **Liveness Indicator**: Tracks whether the network continues making progress
+- **Safety Indicator**: Monitors for fork scenarios and conflicting commits
+- **Real-time Status**: Visual indicators for both properties
+- **Violation Detection**: Automatic detection and logging of property violations
+
+#### 7. **Configuration Management**
+
+- **Preset Configurations**: Pre-built scenarios (Small Network, Large Network, Byzantine Test, Partition Test)
+- **Custom Configurations**: Full control over all simulation parameters
+- **Config Validation**: Input validation with helpful error messages
+- **Import/Export**: Save and load configurations as JSON files
+- **Local Storage**: Automatic persistence of configuration settings
+
+#### 8. **Real-Time Controls**
+
+- **Start/Stop/Reset**: Full simulation control
+- **Speed Control**: Adjustable simulation speed (0.5x to 5x)
+- **Configuration Panel**: Live parameter adjustment
+- **Interactive UI**: Responsive controls with immediate feedback
+
+#### 9. **Logging System**
+
+- **Comprehensive Logs**: Detailed event logging with timestamps
+- **Log Categories**: Info, warning, error, success, and block events
+- **Log Levels**: Configurable verbosity (minimal, normal, verbose)
+- **Color-Coded**: Visual distinction between log types
+- **Scrollable Window**: Persistent log history
+
+## Project Structure
+
+```
+BTA Project/
+├── public/
+│   └── index.html                    # Static HTML entry point
+├── src/
+│   ├── main.jsx                      # React entry point, renders App
+│   ├── App.jsx                       # Main application component
+│   ├── index.css                     # Global styles
+│   │
+│   ├── components/                   # React UI components
+│   │   ├── ConsensusVisualizer.jsx   # Main visualization canvas
+│   │   ├── Controls.jsx              # Simulation control buttons
+│   │   ├── ConfigurationPanel.jsx    # Config editor interface
+│   │   ├── Node.jsx                  # Individual node visualization
+│   │   ├── Block.jsx                 # Block display component
+│   │   ├── LivenessIndicator.jsx     # Liveness property monitor
+│   │   ├── SafetyIndicator.jsx       # Safety property monitor
+│   │   ├── LogsWindow.jsx            # Event log display
+│   │   ├── TimeoutVisualizer.jsx     # Timeout progress display
+│   │   ├── TimeoutStats.jsx          # Timeout statistics panel
+│   │   ├── VotingBreakdown.jsx       # Current round vote details
+│   │   ├── VotingDetails.jsx         # Detailed vote analysis
+│   │   ├── VotingHistory.jsx         # Historical voting records
+│   │   ├── VotingStatistics.jsx      # Voting metrics dashboard
+│   │   └── VotingVisualization.jsx   # Visual voting representation
+│   │
+│   ├── context/
+│   │   └── ConsensusContext.jsx      # Global state management via React Context
+│   │                                 # Manages: nodes, blocks, rounds, config,
+│   │                                 # voting, timeouts, logs, liveness/safety
+│   │
+│   ├── utils/                        # Core logic modules
+│   │   ├── tendermintLogic.js        # Tendermint consensus algorithm
+│   │   │                             # - Proposer selection
+│   │   │                             # - Block creation
+│   │   │                             # - Voting logic (prevote/precommit)
+│   │   │                             # - VotingRound data structures
+│   │   │
+│   │   ├── NetworkSimulation.js      # Network layer simulation
+│   │   │                             # - Node initialization
+│   │   │                             # - Consensus step execution
+│   │   │                             # - Timeout handling
+│   │   │                             # - Network condition simulation
+│   │   │
+│   │   └── ConfigManager.js          # Configuration utilities
+│   │                                 # - Default/preset configs
+│   │                                 # - Validation logic
+│   │                                 # - Import/export functions
+│   │                                 # - Success rate estimation
+│   │
+│   ├── styles/                       # CSS styling
+│   │   ├── App.css                   # Application-wide styles
+│   │   └── Visualizer.css            # Visualization-specific styles
+│   │
+│   └── data/
+│       └── sampleNetwork.json        # Sample network configuration
+│
+├── package.json                      # NPM dependencies and scripts
+├── vite.config.js                    # Vite build configuration
+├── eslint.config.js                  # ESLint linting rules
+│
+└── Documentation/                    # Implementation guides
+    ├── CONFIGMANAGER_INTEGRATION.md  # Config system documentation
+    ├── TIMEOUT_IMPLEMENTATION_GUIDE.md
+    ├── TIMEOUT_QUICK_REFERENCE.md
+    ├── VOTING_FEATURES_GUIDE.md
+    ├── VOTING_IMPLEMENTATION_SUMMARY.md
+    └── QUICK_REFERENCE.md
+```
+
+## Technical Architecture
+
+### State Management
+
+- **React Context API**: Centralized state management through `ConsensusContext`
+- **Global State**: Nodes, blocks, rounds, configuration, voting data, timeouts, logs
+- **Real-time Updates**: Automatic re-rendering on state changes
+
+### Consensus Flow
+
+1. **Initialization**: Network created with configured number of nodes
+2. **Proposer Selection**: Round-robin selection among eligible nodes
+3. **Block Proposal**: Proposer creates block with transactions
+4. **Prevote Phase**: All nodes vote on the proposed block
+5. **Threshold Check**: Verify 2/3+ prevotes received
+6. **Precommit Phase**: If prevotes pass, nodes precommit
+7. **Commit/Timeout**: Block committed if 2/3+ precommits, else timeout
+8. **Next Round**: Process repeats with new proposer
+
+### Data Structures
+
+#### Node Object
+
+```javascript
+{
+  id: number,              // Unique node identifier
+  state: string,           // "Idle", "Voting", "Committed", "Timeout"
+  color: string,           // Visual state indicator
+  isByzantine: boolean,    // Byzantine node flag
+  byzantineType: string,   // "faulty", "equivocator", "silent"
+  isOnline: boolean        // Availability status
+}
+```
+
+#### Block Object
+
+```javascript
+{
+  height: number,          // Block number
+  proposer: number,        // Proposer node ID
+  txCount: number,         // Number of transactions
+  hash: string,            // Block hash
+  timestamp: number        // Creation time
+}
+```
+
+#### VotingRound Object
+
+```javascript
+{
+  roundNumber: number,           // Round identifier
+  roundHeight: number,           // Block height
+  proposerId: number,            // Proposer node ID
+  prevotesReceived: {},          // Map of nodeId -> vote
+  precommitsReceived: {},        // Map of nodeId -> vote
+  timestamp: number,             // Round start time
+  result: string,                // "approved", "rejected", "pending"
+  prevoteCount: number,          // Positive prevote count
+  precommitCount: number,        // Positive precommit count
+  prevoteThresholdMet: boolean,  // 2/3+ prevotes achieved
+  precommitThresholdMet: boolean // 2/3+ precommits achieved
+}
+```
+
+## Configuration Parameters
+
+### Network Settings
+
+- **nodeCount**: Number of validator nodes (3-20)
+- **latency**: Network delay in milliseconds (0-5000ms)
+- **packetLoss**: Packet loss percentage (0-100%)
+- **messageTimeout**: Message timeout duration (1000-10000ms)
+
+### Consensus Settings
+
+- **roundTimeout**: Round timeout duration (1000-10000ms)
+- **voteThreshold**: Required vote percentage (0.5-1.0, default: 0.67)
+- **blockSize**: Transactions per block (1-100)
+- **proposalDelay**: Proposal delay in milliseconds (0-1000ms)
+- **timeoutMultiplier**: Timeout escalation multiplier (1.0-3.0)
+- **timeoutEscalationEnabled**: Enable/disable timeout backoff
+
+### Node Behavior
+
+- **byzantineCount**: Number of Byzantine nodes (0 to n/3)
+- **byzantineType**: Type of Byzantine behavior
+- **downtimePercentage**: Random node unavailability (0-100%)
+- **responseVariance**: Node response time variance (0-1000ms)
+
+### Simulation Settings
+
+- **transactionRate**: Transaction generation rate (low/medium/high)
+- **transactionPoolSize**: Pool size (10-1000)
+- **durationLimit**: Simulation time limit (off/5min/10min/30min)
+- **logLevel**: Logging verbosity (minimal/normal/verbose)
+
+## Technology Stack
+
+- **React 18**: UI framework with hooks
+- **Vite**: Fast build tool and dev server
+- **Framer Motion**: Animation library for smooth transitions
+- **JavaScript/JSX**: Core programming language
+- **CSS3**: Styling with modern features
+- **LocalStorage API**: Configuration persistence
+
+## Development Commands
 
 ```bash
 # Install dependencies
 npm install
 
-# Run development server
+# Start development server
 npm run dev
 
-# Open in browser
-http://localhost:5173
+# Build for production
+npm run build
+
+# Preview production build
+npm run preview
 ```
 
-## 📖 What is Tendermint?
+## Use Cases
 
-Tendermint is a Byzantine Fault Tolerant (BFT) consensus algorithm that allows a network of nodes to agree on a shared state, even when some nodes are faulty or malicious. It guarantees two critical properties:
+1. **Education**: Learn Tendermint consensus mechanics visually
+2. **Research**: Test Byzantine fault tolerance under various conditions
+3. **Network Analysis**: Study consensus performance with different parameters
+4. **Debugging**: Understand timeout mechanisms and vote propagation
+5. **Demonstration**: Present BFT consensus concepts to audiences
 
-- **Safety**: All honest nodes agree on the same value (no forks)
-- **Liveness**: The system continues making progress (nodes eventually commit blocks)
+## For LLM Context
 
-## 🎯 Project Features
+This project simulates the Tendermint BFT consensus protocol with a React-based frontend. The core logic resides in `src/utils/` (consensus algorithm, network simulation, configuration). The UI components in `src/components/` provide visualization and controls. State is managed centrally via `ConsensusContext.jsx`. The system models Byzantine nodes, network failures, voting phases, timeout mechanisms, and tracks liveness/safety properties in real-time. Configuration is highly flexible with validation, presets, and import/export capabilities.
 
-- **Real-time Consensus Visualization**: Watch nodes progress through consensus rounds
-- **Safety & Liveness Indicators**: Monitor the health and progress of the network
-- **Simulation Logs Window**: Real-time logs showing all consensus events and state changes
-- **Interactive Controls**:
-  - Start/Pause simulation
-  - Reset network to initial state
-  - Adjust simulation speed (0.25x to 4x)
-- **Block Chain View**: See blocks as they are committed to the chain
-- **Node State Tracking**: Observe each node's state (Idle, Voting, Committed, Timeout)
+## Key Implementation Details
 
-## 🏗️ How It Works
+### File Responsibilities
 
-### Architecture Overview
+- **`ConsensusContext.jsx`**: Central state hub managing all application state including nodes, blocks, voting rounds, timeouts, and configuration. Provides hooks for all components to access and modify state.
 
-The project is built with **React** and **Vite**, using a context-based state management pattern. Here's how the components work together:
+- **`tendermintLogic.js`**: Pure consensus logic implementing proposer selection, block creation, voting mechanics, and voting round data structure management. No side effects.
 
-```
-App.jsx (Root Component)
-    ├── ConsensusProvider (Context) - Manages simulation state
-    │
-    ├── LivenessIndicator - Shows if network is making progress
-    ├── SafetyIndicator - Shows if all nodes agree (no forks)
-    │
-    ├── ConsensusVisualizer - Displays nodes and blocks
-    │   ├── Node components - Individual validator nodes
-    │   └── Block components - Committed blocks in the chain
-    │
-    ├── Controls - User interface for controlling simulation
-    │   ├── Start/Pause buttons
-    │   └── Speed control (0.25x, 0.5x, 1x, 2x, 4x)
-    │
-    └── LogsWindow - Real-time simulation event logs
-        ├── Displays consensus events, blocks proposed/committed
-        └── Shows safety/liveness violations with timestamps
-```
+- **`NetworkSimulation.js`**: Orchestrates consensus steps by calling tendermintLogic functions and applying network conditions (latency, packet loss, downtime). Handles timeout detection and state transitions.
 
-### Core Components
+- **`ConfigManager.js`**: Configuration management including validation, presets, import/export, and analytical functions (success rate estimation, consensus time estimation).
 
-#### 1. **ConsensusContext** (`src/context/ConsensusContext.jsx`)
+- **`ConsensusVisualizer.jsx`**: Main visualization component rendering nodes, blocks, and their connections. Integrates TimeoutVisualizer and VotingVisualization.
 
-The heart of the simulation, managing:
+- **Voting Components**: Multiple specialized components (VotingBreakdown, VotingDetails, VotingHistory, VotingStatistics, VotingVisualization) provide comprehensive voting analysis from different perspectives.
 
-- **State Management**: Tracks nodes, blocks, rounds, and consensus properties
-- **Simulation Loop**: Runs consensus steps at configurable intervals
-- **Speed Control**: Adjusts simulation speed (base: 1500ms, modified by speed multiplier)
+- **Indicator Components**: LivenessIndicator and SafetyIndicator monitor and display the two critical consensus properties in real-time.
 
-Key states:
+- **Controls**: Simulation controls (start/stop/reset), speed adjustment, and configuration panel for live parameter changes.
 
-```javascript
-- nodes: Array of validator nodes with their states
-- blocks: Array of committed blocks
-- round: Current consensus round number
-- isRunning: Whether simulation is active
-- speed: Current speed multiplier (0.25x to 4x)
-- liveness: Boolean indicating network progress
-- safety: Boolean indicating no forks/conflicts
-- logs: Array of log entries with timestamps and types
-```
-
-#### 2. **Network Simulation** (`src/utils/NetworkSimulation.js`)
-
-Handles the consensus algorithm logic:
-
-**`initializeNetwork(nodeCount)`**
-
-- Creates validator nodes with initial "Idle" state
-- Each node gets a unique ID and color
-
-**`simulateConsensusStep(nodes, blocks)`**
-
-- **Step 1**: Select proposer using round-robin
-- **Step 2**: Proposer creates a new block
-- **Step 3**: All nodes vote on the block
-- **Step 4**: If 2/3+ votes approve, block is committed
-- **Step 5**: Update node states and safety/liveness indicators
-
-#### 3. **Tendermint Logic** (`src/utils/tendermintLogic.js`)
-
-Implements core consensus functions:
-
-- `getNextProposer()`: Determines which node proposes next block
-- `createBlock()`: Constructs a new block with proposer and round info
-- `voteOnBlock()`: Simulates voting process and calculates approval
-
-#### 4. **Controls Component** (`src/components/Controls.jsx`)
-
-Provides user interface for:
-
-- **Start/Pause**: Begin or pause the consensus simulation
-- **Reset**: Return network to initial state
-- **Speed Control**: Buttons to adjust simulation speed
-  - 0.25x (slowest - 6000ms per step)
-  - 0.5x (slow - 3000ms per step)
-  - 1x (normal - 1500ms per step)
-  - 2x (fast - 750ms per step)
-  - 4x (fastest - 375ms per step)
-
-#### 5. **Visualization Components**
-
-- **ConsensusVisualizer**: Container displaying all nodes and blocks
-- **Node**: Shows individual validator state with color coding:
-  - Gray (#ccc): Idle
-  - Yellow (#f9c74f): Voting
-  - Green (#90be6d): Committed
-  - Red (#f94144): Timeout
-- **Block**: Displays committed blocks with proposer and round info
-- **LivenessIndicator**: Green if progressing, red if stalled
-- **SafetyIndicator**: Green if safe (no forks), red if violated
-- **LogsWindow** (`src/components/LogsWindow.jsx`): Displays real-time simulation logs positioned on the right side of the UI
-  - Shows consensus events (block proposals, commits)
-  - Displays safety/liveness status changes
-  - Color-coded log entries by type (info, success, error, warning, block)
-  - Auto-scrolling to latest logs
-  - Clear logs functionality
-
-### Consensus Flow
-
-1. **Round Start**: System selects a proposer based on round number
-2. **Propose**: Proposer creates and broadcasts a block
-3. **Prevote**: All nodes vote on the proposed block
-4. **Precommit**: If 2/3+ prevotes received, nodes precommit
-5. **Commit**: If 2/3+ precommits received, block is finalized
-6. **Next Round**: Increment round and repeat with new proposer
-
-### State Transitions
-
-```
-Idle → Voting → Committed (success)
-                ↓
-            Timeout (failure) → Next Round
-```
-
-## 🎨 Customization
-
-### Adjust Number of Nodes
-
-In `ConsensusContext.jsx`:
-
-```javascript
-const initialNodes = initializeNetwork(4); // Change 4 to desired number
-```
-
-### Modify Base Speed
-
-In `ConsensusContext.jsx`:
-
-```javascript
-const baseDelay = 1500; // Change to desired milliseconds
-```
-
-### Adjust Failure Probabilities
-
-In `NetworkSimulation.js`:
-
-```javascript
-newLiveness = Math.random() > 0.1; // 10% chance liveness fails
-newSafety = Math.random() > 0.05; // 5% chance safety fails
-```
-
-## 📁 Project Structure
-
-```
-src/
-├── App.jsx                      # Root component
-├── main.jsx                     # Application entry point
-├── index.css                    # Global styles
-├── components/
-│   ├── ConsensusVisualizer.jsx  # Main visualization container
-│   ├── Node.jsx                 # Individual node display
-│   ├── Block.jsx                # Block display
-│   ├── Controls.jsx             # Control panel with speed options
-│   ├── LivenessIndicator.jsx    # Liveness status display
-│   ├── SafetyIndicator.jsx      # Safety status display
-│   └── LogsWindow.jsx           # Real-time simulation logs display
-├── context/
-│   └── ConsensusContext.jsx     # State management & simulation logic
-├── utils/
-│   ├── NetworkSimulation.js     # Network simulation functions
-│   └── tendermintLogic.js       # Tendermint consensus logic
-├── styles/
-│   ├── App.css                  # Main application styles
-│   └── Visualizer.css           # Visualization-specific styles
-└── data/
-    └── sampleNetwork.json       # Sample network configuration
-```
-
-## 🎓 Educational Purpose
-
-This visualizer is designed to help students and developers understand:
-
-- How Byzantine Fault Tolerant consensus works
-- The role of proposers and validators in distributed systems
-- How safety and liveness properties are maintained
-- The impact of network conditions on consensus
-- Round-based consensus protocols
-
-## 🔧 Technologies Used
-
-- **React 18**: Component-based UI framework
-- **Vite**: Fast build tool and dev server
-- **Context API**: State management
-- **CSS3**: Modern styling with flexbox and animations
-
-## 🚀 Future Enhancements
-
-- Add Byzantine node behavior simulation
-- Implement network partitioning scenarios
-- Add transaction pool visualization
-- Export consensus logs for analysis
-- Add step-by-step mode for detailed observation
-- Visualize message passing between nodes
-- Add configuration panel for consensus parameters
-
-## 📚 Learn More
-
-- [Tendermint Core Documentation](https://docs.tendermint.com/)
-- [Byzantine Fault Tolerance](https://en.wikipedia.org/wiki/Byzantine_fault)
-- [Consensus Algorithms](<https://en.wikipedia.org/wiki/Consensus_(computer_science)>)
-
-## 📄 License
-
-This project is intended for educational and demonstration purposes.
+This architecture ensures separation of concerns, making it easy to understand, test, and extend individual features independently.
