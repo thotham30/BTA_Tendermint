@@ -131,11 +131,8 @@ BTA Project/
 │   │                                 # - Success rate estimation
 │   │
 │   ├── styles/                       # CSS styling
-│   │   ├── App.css                   # Application-wide styles
-│   │   └── Visualizer.css            # Visualization-specific styles
-│   │
-│   └── data/
-│       └── sampleNetwork.json        # Sample network configuration
+│       ├── App.css                   # Application-wide styles
+│       └── Visualizer.css            # Visualization-specific styles
 │
 ├── package.json                      # NPM dependencies and scripts
 ├── vite.config.js                    # Vite build configuration

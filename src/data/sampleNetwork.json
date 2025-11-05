@@ -1,9 +1,0 @@
-{
-  "description": "Sample network with 4 validators",
-  "validators": [
-    { "id": 0, "weight": 1 },
-    { "id": 1, "weight": 1 },
-    { "id": 2, "weight": 1 },
-    { "id": 3, "weight": 1 }
-  ]
-}
