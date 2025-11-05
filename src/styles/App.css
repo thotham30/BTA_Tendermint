@@ -10,7 +10,7 @@ body {
 .app-container {
   display: flex;
   flex-direction: column;
-  align-items: center;
+  min-height: 100vh;
   text-align: center;
   padding: 20px;
 }
@@ -30,6 +30,22 @@ body {
   display: flex;
   gap: 15px;
   margin: 20px 0;
+}
+
+.main-content {
+  display: flex;
+  gap: 20px;
+  flex: 1;
+  width: 100%;
+  max-width: 1600px;
+  margin: 0 auto;
+}
+
+.left-panel {
+  flex: 1;
+  display: flex;
+  flex-direction: column;
+  gap: 20px;
 }
 
 .controls {
@@ -114,4 +130,123 @@ button:hover {
   border-radius: 10px;
   font-weight: 600;
   color: white;
+}
+
+/* Logs Window Styles */
+.logs-window {
+  width: 400px;
+  background-color: #1e293b;
+  border: 2px solid #334155;
+  border-radius: 12px;
+  display: flex;
+  flex-direction: column;
+  box-shadow: 0 4px 6px rgba(0, 0, 0, 0.3);
+  overflow: hidden;
+}
+
+.logs-title {
+  color: #38bdf8;
+  margin: 0;
+  padding: 15px;
+  font-size: 1.1rem;
+  border-bottom: 2px solid #334155;
+  background-color: #0f172a;
+}
+
+.logs-container {
+  flex: 1;
+  overflow-y: auto;
+  padding: 15px;
+  font-size: 0.85rem;
+  font-family: "Courier New", monospace;
+  max-height: 600px;
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+}
+
+.logs-empty {
+  color: #94a3b8;
+  text-align: center;
+  margin: auto;
+  font-style: italic;
+}
+
+.log-entry {
+  padding: 8px 10px;
+  border-radius: 6px;
+  display: flex;
+  gap: 10px;
+  align-items: flex-start;
+  border-left: 3px solid;
+}
+
+.log-timestamp {
+  color: #64748b;
+  font-weight: 600;
+  min-width: fit-content;
+}
+
+.log-message {
+  color: #e2e8f0;
+  flex: 1;
+  word-break: break-word;
+}
+
+.log-info {
+  background-color: #1e3a8a;
+  border-left-color: #3b82f6;
+}
+
+.log-success {
+  background-color: #064e3b;
+  border-left-color: #10b981;
+}
+
+.log-error {
+  background-color: #7f1d1d;
+  border-left-color: #ef4444;
+}
+
+.log-warning {
+  background-color: #78350f;
+  border-left-color: #f59e0b;
+}
+
+.log-block {
+  background-color: #4c0519;
+  border-left-color: #ec4899;
+}
+
+.logs-clear-btn {
+  padding: 10px 15px;
+  background-color: #334155;
+  color: #e2e8f0;
+  border: none;
+  cursor: pointer;
+  font-weight: 600;
+  border-top: 1px solid #475569;
+  transition: all 0.2s;
+}
+
+.logs-clear-btn:hover {
+  background-color: #475569;
+}
+
+/* Scrollbar Styling */
+.logs-container::-webkit-scrollbar {
+  width: 8px;
+}
+
+.logs-container::-webkit-scrollbar-track {
+  background: transparent;
+}
+
+.logs-container::-webkit-scrollbar-thumb {
+  background: #475569;
+  border-radius: 4px;
+}
+
+.logs-container::-webkit-scrollbar-thumb:hover {
+  background: #64748b;
 }

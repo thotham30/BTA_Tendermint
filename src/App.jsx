@@ -4,6 +4,7 @@ import ConsensusVisualizer from "./components/ConsensusVisualizer";
 import Controls from "./components/Controls";
 import LivenessIndicator from "./components/LivenessIndicator";
 import SafetyIndicator from "./components/SafetyIndicator";
+import LogsWindow from "./components/LogsWindow";
 import "./styles/App.css";
 
 export default function App() {
@@ -20,8 +21,13 @@ export default function App() {
           <SafetyIndicator />
         </div>
 
-        <ConsensusVisualizer />
-        <Controls />
+        <div className="main-content">
+          <div className="left-panel">
+            <ConsensusVisualizer />
+            <Controls />
+          </div>
+          <LogsWindow />
+        </div>
       </div>
     </ConsensusProvider>
   );

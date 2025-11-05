@@ -26,6 +26,7 @@ Tendermint is a Byzantine Fault Tolerant (BFT) consensus algorithm that allows a
 
 - **Real-time Consensus Visualization**: Watch nodes progress through consensus rounds
 - **Safety & Liveness Indicators**: Monitor the health and progress of the network
+- **Simulation Logs Window**: Real-time logs showing all consensus events and state changes
 - **Interactive Controls**:
   - Start/Pause simulation
   - Reset network to initial state
@@ -50,9 +51,13 @@ App.jsx (Root Component)
     │   ├── Node components - Individual validator nodes
     │   └── Block components - Committed blocks in the chain
     │
-    └── Controls - User interface for controlling simulation
-        ├── Start/Pause buttons
-        └── Speed control (0.25x, 0.5x, 1x, 2x, 4x)
+    ├── Controls - User interface for controlling simulation
+    │   ├── Start/Pause buttons
+    │   └── Speed control (0.25x, 0.5x, 1x, 2x, 4x)
+    │
+    └── LogsWindow - Real-time simulation event logs
+        ├── Displays consensus events, blocks proposed/committed
+        └── Shows safety/liveness violations with timestamps
 ```
 
 ### Core Components
@@ -75,6 +80,7 @@ Key states:
 - speed: Current speed multiplier (0.25x to 4x)
 - liveness: Boolean indicating network progress
 - safety: Boolean indicating no forks/conflicts
+- logs: Array of log entries with timestamps and types
 ```
 
 #### 2. **Network Simulation** (`src/utils/NetworkSimulation.js`)
@@ -126,6 +132,12 @@ Provides user interface for:
 - **Block**: Displays committed blocks with proposer and round info
 - **LivenessIndicator**: Green if progressing, red if stalled
 - **SafetyIndicator**: Green if safe (no forks), red if violated
+- **LogsWindow** (`src/components/LogsWindow.jsx`): Displays real-time simulation logs positioned on the right side of the UI
+  - Shows consensus events (block proposals, commits)
+  - Displays safety/liveness status changes
+  - Color-coded log entries by type (info, success, error, warning, block)
+  - Auto-scrolling to latest logs
+  - Clear logs functionality
 
 ### Consensus Flow
 
@@ -184,7 +196,8 @@ src/
 │   ├── Block.jsx                # Block display
 │   ├── Controls.jsx             # Control panel with speed options
 │   ├── LivenessIndicator.jsx    # Liveness status display
-│   └── SafetyIndicator.jsx      # Safety status display
+│   ├── SafetyIndicator.jsx      # Safety status display
+│   └── LogsWindow.jsx           # Real-time simulation logs display
 ├── context/
 │   └── ConsensusContext.jsx     # State management & simulation logic
 ├── utils/
