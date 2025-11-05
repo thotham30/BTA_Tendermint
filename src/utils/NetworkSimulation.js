@@ -36,6 +36,17 @@ export function simulateConsensusStep(
   const round = blocks.length;
   const proposerNode = getNextProposer(nodes, round);
 
+  // Check for timeout
+  const {
+    roundStartTime,
+    timeoutDuration,
+    handleRoundTimeout,
+    currentRound,
+  } = consensusContext;
+
+  const elapsedTime = Date.now() - roundStartTime;
+  const timedOut = elapsedTime >= timeoutDuration;
+
   // Apply network latency simulation
   const latency = config?.network?.latency || 100;
   const packetLoss = config?.network?.packetLoss || 0;
@@ -56,6 +67,29 @@ export function simulateConsensusStep(
       isOnline,
     };
   });
+
+  // If timeout occurred, move to next proposer
+  if (timedOut) {
+    handleRoundTimeout();
+
+    // Mark nodes as timed out
+    updatedNodes.forEach((n) => {
+      if (n.isOnline) {
+        n.state = "Timeout";
+        n.color = n.isByzantine ? "#ff6b6b" : "#f94144";
+      }
+    });
+
+    return {
+      updatedNodes,
+      newBlock: null,
+      newLiveness: false,
+      newSafety: true,
+      votingRound: null,
+      timedOut: true,
+      newProposer: getNextProposer(updatedNodes, round + 1),
+    };
+  }
 
   // Step 1: proposer creates block
   const block = createBlock(proposerNode.id, round + 1, config);
@@ -154,5 +188,7 @@ export function simulateConsensusStep(
     newLiveness,
     newSafety,
     votingRound,
+    timedOut: false,
+    newProposer: proposerNode,
   };
 }

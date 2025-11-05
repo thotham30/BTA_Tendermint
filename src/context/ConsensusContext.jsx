@@ -28,6 +28,29 @@ export const ConsensusProvider = ({ children }) => {
   const [speed, setSpeed] = useState(1); // 1x speed by default
   const [logs, setLogs] = useState([]);
 
+  // Timeout state - initialize from config
+  const [roundStartTime, setRoundStartTime] = useState(
+    Date.now()
+  );
+  const [timeoutDuration, setTimeoutDuration] = useState(
+    config.consensus.roundTimeout || 5000
+  );
+  const [baseTimeoutDuration, setBaseTimeoutDuration] = useState(
+    config.consensus.roundTimeout || 5000
+  );
+  const [timeoutMultiplier, setTimeoutMultiplier] = useState(
+    config.consensus.timeoutMultiplier || 1.5
+  );
+  const [roundTimeouts, setRoundTimeouts] = useState(0);
+  const [consecutiveTimeouts, setConsecutiveTimeouts] =
+    useState(0);
+  const [timeoutEscalationEnabled, setTimeoutEscalationEnabled] =
+    useState(
+      config.consensus.timeoutEscalationEnabled !== false
+    );
+  const [timeoutHistory, setTimeoutHistory] = useState([]);
+  const [currentProposer, setCurrentProposer] = useState(null);
+
   // Voting state
   const [votingHistory, setVotingHistory] = useState([]);
   const [currentRoundVotes, setCurrentRoundVotes] =
@@ -70,11 +93,32 @@ export const ConsensusProvider = ({ children }) => {
     setVotingHistory([]);
     setCurrentRoundVotes(null);
     setSelectedRoundForDetails(null);
+    // Reset timeout state
+    setRoundStartTime(Date.now());
+    setTimeoutDuration(baseTimeoutDuration);
+    setRoundTimeouts(0);
+    setConsecutiveTimeouts(0);
+    setTimeoutHistory([]);
+    setCurrentProposer(null);
     addLog("Network reset successfully", "info");
   };
 
   const loadNewConfig = (newConfig) => {
     setConfig(newConfig);
+
+    // Update timeout settings from new config
+    const newBaseTimeout =
+      newConfig.consensus.roundTimeout || 5000;
+    const newMultiplier =
+      newConfig.consensus.timeoutMultiplier || 1.5;
+    const newEscalation =
+      newConfig.consensus.timeoutEscalationEnabled !== false;
+
+    setBaseTimeoutDuration(newBaseTimeout);
+    setTimeoutDuration(newBaseTimeout);
+    setTimeoutMultiplier(newMultiplier);
+    setTimeoutEscalationEnabled(newEscalation);
+
     setNodes(
       initializeNetwork(newConfig.network.nodeCount, newConfig)
     );
@@ -86,6 +130,10 @@ export const ConsensusProvider = ({ children }) => {
     setVotingHistory([]);
     setCurrentRoundVotes(null);
     setSelectedRoundForDetails(null);
+    setRoundTimeouts(0);
+    setConsecutiveTimeouts(0);
+    setTimeoutHistory([]);
+    setCurrentProposer(null);
     addLog(
       `Configuration "${newConfig.name}" applied`,
       "success"
@@ -94,6 +142,80 @@ export const ConsensusProvider = ({ children }) => {
 
   const changeSpeed = (newSpeed) => {
     setSpeed(newSpeed);
+  };
+
+  const updateTimeoutSettings = (
+    duration,
+    multiplier,
+    escalationEnabled
+  ) => {
+    if (duration !== undefined) setTimeoutDuration(duration);
+    if (multiplier !== undefined)
+      setTimeoutMultiplier(multiplier);
+    if (escalationEnabled !== undefined)
+      setTimeoutEscalationEnabled(escalationEnabled);
+  };
+
+  const handleRoundTimeout = () => {
+    const newTimeouts = roundTimeouts + 1;
+    const newConsecutiveTimeouts = consecutiveTimeouts + 1;
+
+    setRoundTimeouts(newTimeouts);
+    setConsecutiveTimeouts(newConsecutiveTimeouts);
+
+    // Record timeout event
+    const timeoutEvent = {
+      round,
+      timestamp: Date.now(),
+      duration: timeoutDuration,
+      escalationLevel: newConsecutiveTimeouts,
+      proposer: currentProposer,
+    };
+    setTimeoutHistory((prev) => [...prev, timeoutEvent]);
+
+    // Apply exponential backoff if escalation is enabled
+    if (timeoutEscalationEnabled) {
+      const newTimeout = Math.min(
+        timeoutDuration * timeoutMultiplier,
+        30000
+      ); // Cap at 30s
+      setTimeoutDuration(newTimeout);
+      addLog(
+        `Round ${round} timeout! Escalating timeout to ${Math.round(
+          newTimeout
+        )}ms (${newConsecutiveTimeouts}${
+          newConsecutiveTimeouts === 1
+            ? "st"
+            : newConsecutiveTimeouts === 2
+            ? "nd"
+            : newConsecutiveTimeouts === 3
+            ? "rd"
+            : "th"
+        } consecutive timeout)`,
+        "warning"
+      );
+    } else {
+      addLog(
+        `Round ${round} timeout! Moving to next proposer`,
+        "warning"
+      );
+    }
+
+    // Reset round start time for new proposer
+    setRoundStartTime(Date.now());
+  };
+
+  const handleSuccessfulCommit = () => {
+    // Reset timeout duration and consecutive count on successful block commit
+    if (consecutiveTimeouts > 0) {
+      addLog(
+        `Block committed! Resetting timeout duration to ${baseTimeoutDuration}ms`,
+        "success"
+      );
+    }
+    setTimeoutDuration(baseTimeoutDuration);
+    setConsecutiveTimeouts(0);
+    setRoundStartTime(Date.now());
   };
 
   const addLog = (message, type = "info") => {
@@ -146,12 +268,25 @@ export const ConsensusProvider = ({ children }) => {
         newLiveness,
         newSafety,
         votingRound,
+        timedOut,
+        newProposer,
       } = simulateConsensusStep(nodes, blocks, config, {
         updateCurrentRoundVotes,
         finalizeRound,
         addLog,
+        roundStartTime,
+        timeoutDuration,
+        handleRoundTimeout,
+        currentRound: round,
       });
+
       setNodes(updatedNodes);
+
+      // Update current proposer
+      if (newProposer) {
+        setCurrentProposer(newProposer);
+      }
+
       if (newBlock) {
         setBlocks((prev) => [...prev, newBlock]);
         addLog(
@@ -184,7 +319,14 @@ export const ConsensusProvider = ({ children }) => {
               : "warning"
           );
         }
+
+        // Handle successful commit
+        handleSuccessfulCommit();
+      } else if (timedOut) {
+        // Timeout occurred but no new block
+        // The handleRoundTimeout was already called in simulateConsensusStep
       }
+
       setRound((prev) => prev + 1);
 
       if (newLiveness !== liveness) {
@@ -228,6 +370,9 @@ export const ConsensusProvider = ({ children }) => {
     liveness,
     safety,
     config,
+    roundStartTime,
+    timeoutDuration,
+    round,
   ]);
 
   return (
@@ -247,6 +392,16 @@ export const ConsensusProvider = ({ children }) => {
         showVotingDetails,
         showVotingHistory,
         selectedRoundForDetails,
+        // Timeout-related state
+        roundStartTime,
+        timeoutDuration,
+        baseTimeoutDuration,
+        timeoutMultiplier,
+        roundTimeouts,
+        consecutiveTimeouts,
+        timeoutEscalationEnabled,
+        timeoutHistory,
+        currentProposer,
         startConsensus,
         stopConsensus,
         resetNetwork,
@@ -259,6 +414,10 @@ export const ConsensusProvider = ({ children }) => {
         toggleVotingDetails,
         toggleVotingHistory,
         selectRoundForDetails,
+        // Timeout-related functions
+        updateTimeoutSettings,
+        handleRoundTimeout,
+        handleSuccessfulCommit,
       }}
     >
       {children}

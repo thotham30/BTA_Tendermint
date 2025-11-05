@@ -1,6 +1,9 @@
-import React, { useState } from "react";
+import React, { useState, useEffect } from "react";
 import { useConsensus } from "../context/ConsensusContext";
-import { PRESET_CONFIGS } from "../utils/ConfigManager";
+import {
+  PRESET_CONFIGS,
+  saveConfig,
+} from "../utils/ConfigManager";
 import ConfigurationPanel from "./ConfigurationPanel";
 
 export default function Controls() {
@@ -16,9 +19,33 @@ export default function Controls() {
     toggleVotingDetails,
     toggleVotingHistory,
     showVotingDetails,
+    baseTimeoutDuration,
+    timeoutMultiplier,
+    timeoutEscalationEnabled,
+    updateTimeoutSettings,
   } = useConsensus();
 
   const [showConfigPanel, setShowConfigPanel] = useState(false);
+  const [localTimeout, setLocalTimeout] = useState(
+    baseTimeoutDuration
+  );
+  const [localMultiplier, setLocalMultiplier] = useState(
+    timeoutMultiplier
+  );
+  const [localEscalation, setLocalEscalation] = useState(
+    timeoutEscalationEnabled
+  );
+
+  // Update local state when config changes
+  useEffect(() => {
+    setLocalTimeout(baseTimeoutDuration);
+    setLocalMultiplier(timeoutMultiplier);
+    setLocalEscalation(timeoutEscalationEnabled);
+  }, [
+    baseTimeoutDuration,
+    timeoutMultiplier,
+    timeoutEscalationEnabled,
+  ]);
 
   const speedOptions = [
     { label: "0.25x", value: 0.25 },
@@ -33,6 +60,52 @@ export default function Controls() {
     if (preset) {
       loadNewConfig(preset);
     }
+  };
+
+  const handleTimeoutChange = (newTimeout) => {
+    setLocalTimeout(newTimeout);
+    updateTimeoutSettings(newTimeout, undefined, undefined);
+
+    // Update config and save
+    const updatedConfig = {
+      ...config,
+      consensus: {
+        ...config.consensus,
+        roundTimeout: newTimeout,
+      },
+    };
+    saveConfig(updatedConfig);
+  };
+
+  const handleMultiplierChange = (newMultiplier) => {
+    setLocalMultiplier(newMultiplier);
+    updateTimeoutSettings(undefined, newMultiplier, undefined);
+
+    // Update config and save
+    const updatedConfig = {
+      ...config,
+      consensus: {
+        ...config.consensus,
+        timeoutMultiplier: newMultiplier,
+      },
+    };
+    saveConfig(updatedConfig);
+  };
+
+  const handleEscalationToggle = () => {
+    const newValue = !localEscalation;
+    setLocalEscalation(newValue);
+    updateTimeoutSettings(undefined, undefined, newValue);
+
+    // Update config and save
+    const updatedConfig = {
+      ...config,
+      consensus: {
+        ...config.consensus,
+        timeoutEscalationEnabled: newValue,
+      },
+    };
+    saveConfig(updatedConfig);
   };
 
   return (
@@ -91,6 +164,67 @@ export default function Controls() {
               ` • ${config.nodeBehavior.byzantineCount} byzantine`}
           </span>
         </div>
+
+        {/* Timeout Controls Section */}
+        {/* <div className="timeout-controls">
+          <h4>⏱️ Timeout Settings</h4>
+
+          <div className="timeout-control-item">
+            <label>
+              Initial Timeout:{" "}
+              <span className="range-value">
+                {localTimeout}ms
+              </span>
+            </label>
+            <input
+              type="range"
+              min="1000"
+              max="10000"
+              step="500"
+              value={localTimeout}
+              onChange={(e) =>
+                handleTimeoutChange(Number(e.target.value))
+              }
+              disabled={isRunning}
+            />
+          </div>
+
+          <div className="timeout-control-item">
+            <label>
+              Escalation Multiplier:{" "}
+              <span className="range-value">
+                {localMultiplier.toFixed(1)}x
+              </span>
+            </label>
+            <input
+              type="range"
+              min="1.1"
+              max="2.0"
+              step="0.1"
+              value={localMultiplier}
+              onChange={(e) =>
+                handleMultiplierChange(Number(e.target.value))
+              }
+              disabled={isRunning}
+            />
+          </div>
+
+          <div className="timeout-control-item">
+            <label className="checkbox-label">
+              <input
+                type="checkbox"
+                checked={localEscalation}
+                onChange={handleEscalationToggle}
+                disabled={isRunning}
+              />
+              <span>Enable Timeout Escalation</span>
+            </label>
+            <p className="control-help">
+              When enabled, timeout duration increases
+              exponentially after each failure
+            </p>
+          </div>
+        </div> */}
 
         <div className="preset-controls">
           <label>Quick Presets:</label>

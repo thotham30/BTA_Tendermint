@@ -13,9 +13,11 @@ export const DEFAULT_CONFIG = {
   },
   consensus: {
     roundTimeout: 5000, // ms
-    voteThreshold: 2 / 3, // 2/3+ majority
+    voteThreshold: (2 / 3).toFixed(2), // 2/3+ majority
     blockSize: 10, // transactions per block
     proposalDelay: 100, // ms
+    timeoutMultiplier: 1.5, // Exponential backoff multiplier
+    timeoutEscalationEnabled: true, // Enable timeout escalation
   },
   nodeBehavior: {
     byzantineCount: 0,
@@ -43,9 +45,11 @@ export const PRESET_CONFIGS = {
     },
     consensus: {
       roundTimeout: 3000,
-      voteThreshold: 2 / 3,
+      voteThreshold: (2 / 3).toFixed(2),
       blockSize: 5,
       proposalDelay: 50,
+      timeoutMultiplier: 1.4,
+      timeoutEscalationEnabled: true,
     },
     nodeBehavior: {
       byzantineCount: 0,
@@ -70,9 +74,11 @@ export const PRESET_CONFIGS = {
     },
     consensus: {
       roundTimeout: 8000,
-      voteThreshold: 2 / 3,
+      voteThreshold: (2 / 3).toFixed(2),
       blockSize: 20,
       proposalDelay: 150,
+      timeoutMultiplier: 1.6,
+      timeoutEscalationEnabled: true,
     },
     nodeBehavior: {
       byzantineCount: 0,
@@ -97,9 +103,11 @@ export const PRESET_CONFIGS = {
     },
     consensus: {
       roundTimeout: 5000,
-      voteThreshold: 2 / 3,
+      voteThreshold: (2 / 3).toFixed(2),
       blockSize: 10,
       proposalDelay: 100,
+      timeoutMultiplier: 1.8,
+      timeoutEscalationEnabled: true,
     },
     nodeBehavior: {
       byzantineCount: 2,
@@ -124,9 +132,11 @@ export const PRESET_CONFIGS = {
     },
     consensus: {
       roundTimeout: 6000,
-      voteThreshold: 2 / 3,
+      voteThreshold: (2 / 3).toFixed(2),
       blockSize: 10,
       proposalDelay: 100,
+      timeoutMultiplier: 1.5,
+      timeoutEscalationEnabled: true,
     },
     nodeBehavior: {
       byzantineCount: 0,
@@ -196,6 +206,15 @@ export function validateConfig(config) {
     consensus.proposalDelay > 1000
   ) {
     errors.push("Proposal delay must be between 0 and 1000ms");
+  }
+  if (
+    consensus.timeoutMultiplier !== undefined &&
+    (consensus.timeoutMultiplier < 1.0 ||
+      consensus.timeoutMultiplier > 3.0)
+  ) {
+    errors.push(
+      "Timeout multiplier must be between 1.0 and 3.0"
+    );
   }
 
   // Node behavior validation

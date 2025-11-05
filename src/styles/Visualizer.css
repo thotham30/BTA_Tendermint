@@ -32,8 +32,297 @@
   position: relative;
 }
 
+.node-proposer {
+  box-shadow: 0 0 20px rgba(139, 92, 246, 0.8);
+  border: 3px solid #8b5cf6;
+  transform: scale(1.05);
+}
+
+.proposer-indicator {
+  position: absolute;
+  bottom: -8px;
+  right: -8px;
+  width: 28px;
+  height: 28px;
+  border-radius: 50%;
+  background: linear-gradient(135deg, #fbbf24, #f59e0b);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 1rem;
+  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.3);
+}
+
 .node-state {
   font-size: 0.8rem;
+}
+
+/* Timeout Visualizer */
+.timeout-section {
+  margin: 20px 0;
+}
+
+.timeout-visualizer {
+  background-color: #0f172a;
+  border-radius: 12px;
+  padding: 20px;
+  border: 2px solid #334155;
+}
+
+.timeout-visualizer h3 {
+  color: #38bdf8;
+  margin: 0 0 20px 0;
+  font-size: 1.2rem;
+  text-align: center;
+}
+
+.timeout-content {
+  display: flex;
+  gap: 30px;
+  align-items: center;
+  justify-content: center;
+  flex-wrap: wrap;
+}
+
+.circular-timer {
+  position: relative;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+
+.timer-text {
+  position: absolute;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+}
+
+.time-value {
+  font-size: 2rem;
+  font-weight: bold;
+  line-height: 1;
+}
+
+.time-label {
+  font-size: 0.75rem;
+  color: #94a3b8;
+  margin-top: 2px;
+}
+
+.timeout-info {
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+  flex: 1;
+  min-width: 250px;
+}
+
+.info-item {
+  display: flex;
+  justify-content: space-between;
+  padding: 10px 15px;
+  background-color: #1e293b;
+  border-radius: 8px;
+  border: 1px solid #334155;
+}
+
+.info-label {
+  color: #94a3b8;
+  font-size: 0.85rem;
+}
+
+.info-value {
+  color: #f1f5f9;
+  font-weight: 600;
+  font-size: 0.9rem;
+}
+
+.info-value.escalated {
+  color: #f59e0b;
+}
+
+.proposer-highlight {
+  color: #8b5cf6 !important;
+  font-weight: 700;
+}
+
+.timeout-explanation {
+  margin-top: 10px;
+  padding: 12px;
+  background-color: #1e293b;
+  border-radius: 8px;
+  border-left: 3px solid #38bdf8;
+}
+
+.timeout-explanation p {
+  margin: 0;
+  color: #cbd5e1;
+  font-size: 0.8rem;
+  line-height: 1.5;
+}
+
+.timeout-explanation strong {
+  color: #38bdf8;
+}
+
+/* Timeout Stats */
+.timeout-stats-section {
+  margin: 20px 0;
+}
+
+.timeout-stats {
+  background-color: #0f172a;
+  border-radius: 12px;
+  padding: 20px;
+  border: 2px solid #334155;
+}
+
+.timeout-stats h3 {
+  color: #38bdf8;
+  margin: 0 0 20px 0;
+  font-size: 1.2rem;
+}
+
+.timeout-stats h4 {
+  color: #e2e8f0;
+  margin: 0 0 15px 0;
+  font-size: 1rem;
+}
+
+.no-timeouts {
+  text-align: center;
+  padding: 20px;
+  color: #10b981;
+  font-size: 1rem;
+}
+
+.no-timeouts p {
+  margin: 0;
+}
+
+.stat-timeout {
+  color: #f59e0b !important;
+}
+
+.stat-warning {
+  color: #ef4444 !important;
+}
+
+.stat-success {
+  color: #10b981 !important;
+}
+
+.timeout-alert {
+  margin: 20px 0;
+  padding: 15px;
+  background-color: rgba(239, 68, 68, 0.1);
+  border-radius: 8px;
+  border-left: 4px solid #ef4444;
+  color: #fca5a5;
+}
+
+.timeout-alert strong {
+  display: block;
+  color: #ef4444;
+  margin-bottom: 8px;
+  font-size: 0.95rem;
+}
+
+.timeout-alert p {
+  margin: 8px 0;
+  font-size: 0.85rem;
+  color: #e2e8f0;
+}
+
+.timeout-alert ul {
+  margin: 8px 0 0 0;
+  padding-left: 20px;
+  font-size: 0.85rem;
+  color: #e2e8f0;
+}
+
+.timeout-alert li {
+  margin: 5px 0;
+}
+
+.timeout-chain {
+  margin: 20px 0;
+}
+
+.chain-list {
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+}
+
+.chain-item {
+  display: flex;
+  gap: 15px;
+  padding: 12px;
+  background-color: #1e293b;
+  border-radius: 8px;
+  border-left: 3px solid #f59e0b;
+}
+
+.chain-marker {
+  display: flex;
+  align-items: center;
+}
+
+.escalation-badge {
+  background: linear-gradient(135deg, #f59e0b, #ef4444);
+  color: white;
+  padding: 6px 12px;
+  border-radius: 6px;
+  font-weight: bold;
+  font-size: 0.9rem;
+  min-width: 40px;
+  text-align: center;
+}
+
+.chain-details {
+  flex: 1;
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+}
+
+.chain-round {
+  color: #38bdf8;
+  font-weight: 600;
+  font-size: 0.9rem;
+}
+
+.chain-info {
+  color: #e2e8f0;
+  font-size: 0.85rem;
+}
+
+.chain-time {
+  color: #64748b;
+  font-size: 0.75rem;
+}
+
+.timeout-education {
+  margin-top: 20px;
+  padding: 15px;
+  background-color: #1e293b;
+  border-radius: 10px;
+  border: 1px solid #334155;
+}
+
+.timeout-education p {
+  margin: 10px 0;
+  color: #cbd5e1;
+  font-size: 0.85rem;
+  line-height: 1.6;
+}
+
+.timeout-education strong {
+  color: #38bdf8;
+  font-weight: 600;
 }
 
 /* Vote badges on nodes */

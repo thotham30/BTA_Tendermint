@@ -21,6 +21,8 @@ export default function ConfigurationPanel({
   const [config, setConfig] = useState(
     currentConfig || DEFAULT_CONFIG
   );
+  console.log(config);
+
   const [activeTab, setActiveTab] = useState("network");
   const [warnings, setWarnings] = useState([]);
   const [errors, setErrors] = useState([]);
@@ -371,6 +373,60 @@ export default function ConfigurationPanel({
                 />
                 <span className="range-value">
                   {config.consensus.proposalDelay}ms
+                </span>
+              </div>
+
+              <div className="config-field">
+                <label>
+                  Timeout Multiplier
+                  <span className="field-desc">
+                    Exponential backoff multiplier (1.0-3.0x)
+                  </span>
+                </label>
+                <input
+                  type="range"
+                  min="1.0"
+                  max="3.0"
+                  step="0.1"
+                  value={
+                    config.consensus.timeoutMultiplier || 1.5
+                  }
+                  onChange={(e) =>
+                    handleChange(
+                      "consensus",
+                      "timeoutMultiplier",
+                      parseFloat(e.target.value)
+                    )
+                  }
+                />
+                <span className="range-value">
+                  {(
+                    config.consensus.timeoutMultiplier || 1.5
+                  ).toFixed(1)}
+                  x
+                </span>
+              </div>
+
+              <div className="config-field">
+                <label className="checkbox-label">
+                  <input
+                    type="checkbox"
+                    checked={
+                      config.consensus
+                        .timeoutEscalationEnabled !== false
+                    }
+                    onChange={(e) =>
+                      handleChange(
+                        "consensus",
+                        "timeoutEscalationEnabled",
+                        e.target.checked
+                      )
+                    }
+                  />
+                  <span>Enable Timeout Escalation</span>
+                </label>
+                <span className="field-desc">
+                  Increases timeout duration after each failure
                 </span>
               </div>
             </div>

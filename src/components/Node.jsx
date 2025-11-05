@@ -4,7 +4,11 @@ import { useConsensus } from "../context/ConsensusContext";
 
 export default function Node({ node }) {
   const { id, state, color } = node;
-  const { currentRoundVotes } = useConsensus();
+  const { currentRoundVotes, currentProposer } = useConsensus();
+
+  // Check if this node is the current proposer
+  const isProposer =
+    currentProposer && currentProposer.id === id;
 
   // Get vote status for this node
   const getVoteStatus = () => {
@@ -58,7 +62,7 @@ export default function Node({ node }) {
 
   return (
     <motion.div
-      className="node"
+      className={`node ${isProposer ? "node-proposer" : ""}`}
       style={{ backgroundColor: color }}
       whileHover={{ scale: 1.1 }}
     >
@@ -71,6 +75,14 @@ export default function Node({ node }) {
           title={`Byzantine: ${node.byzantineType}`}
         >
           ⚠
+        </div>
+      )}
+      {isProposer && (
+        <div
+          className="proposer-indicator"
+          title="Current Proposer"
+        >
+          👑
         </div>
       )}
     </motion.div>

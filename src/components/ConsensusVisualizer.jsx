@@ -7,6 +7,8 @@ import VotingVisualization from "./VotingVisualization";
 import VotingHistory from "./VotingHistory";
 import VotingDetails from "./VotingDetails";
 import VotingStatistics from "./VotingStatistics";
+import TimeoutVisualizer from "./TimeoutVisualizer";
+import TimeoutStats from "./TimeoutStats";
 import { useConsensus } from "../context/ConsensusContext";
 import "../styles/Visualizer.css";
 
@@ -18,11 +20,19 @@ export default function ConsensusVisualizer() {
     showVotingDetails,
     showVotingHistory,
     currentRoundVotes,
+    isRunning,
   } = useConsensus();
 
   return (
     <div className="visualizer-container">
       <h2>Consensus Round: {round}</h2>
+
+      {/* Timeout Visualizer Section */}
+      {isRunning && (
+        <div className="timeout-section">
+          <TimeoutVisualizer />
+        </div>
+      )}
 
       <div className="nodes-container">
         {nodes.map((node) => (
@@ -51,6 +61,11 @@ export default function ConsensusVisualizer() {
           <VotingStatistics />
         </div>
       )}
+
+      {/* Timeout Statistics Section */}
+      <div className="timeout-stats-section">
+        <TimeoutStats />
+      </div>
 
       <div className="blocks-container">
         <h3>Committed Blocks</h3>
