@@ -1,5 +1,13 @@
-import React, { createContext, useContext, useState, useEffect } from "react";
-import { initializeNetwork, simulateConsensusStep } from "../utils/NetworkSimulation";
+import React, {
+  createContext,
+  useContext,
+  useState,
+  useEffect,
+} from "react";
+import {
+  initializeNetwork,
+  simulateConsensusStep,
+} from "../utils/NetworkSimulation";
 
 const ConsensusContext = createContext();
 
@@ -10,6 +18,7 @@ export const ConsensusProvider = ({ children }) => {
   const [isRunning, setIsRunning] = useState(false);
   const [liveness, setLiveness] = useState(true);
   const [safety, setSafety] = useState(true);
+  const [speed, setSpeed] = useState(1); // 1x speed by default
 
   useEffect(() => {
     const initialNodes = initializeNetwork(4);
@@ -33,8 +42,13 @@ export const ConsensusProvider = ({ children }) => {
     setIsRunning(false);
   };
 
+  const changeSpeed = (newSpeed) => {
+    setSpeed(newSpeed);
+  };
+
   useEffect(() => {
     if (!isRunning) return;
+    const baseDelay = 1500; // Base delay in ms
     const interval = setInterval(() => {
       const { updatedNodes, newBlock, newLiveness, newSafety } =
         simulateConsensusStep(nodes, blocks);
@@ -43,10 +57,10 @@ export const ConsensusProvider = ({ children }) => {
       setRound((prev) => prev + 1);
       setLiveness(newLiveness);
       setSafety(newSafety);
-    }, 1500);
+    }, baseDelay / speed);
 
     return () => clearInterval(interval);
-  }, [isRunning, nodes, blocks]);
+  }, [isRunning, nodes, blocks, speed]);
 
   return (
     <ConsensusContext.Provider
@@ -57,9 +71,11 @@ export const ConsensusProvider = ({ children }) => {
         liveness,
         safety,
         isRunning,
+        speed,
         startConsensus,
         stopConsensus,
         resetNetwork,
+        changeSpeed,
       }}
     >
       {children}

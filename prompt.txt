@@ -1,0 +1,28 @@
+Project: BTA Tendermint Consensus Visualizer
+
+Description:
+This project is a web-based visualization tool for simulating and understanding the Tendermint consensus algorithm. It is built using React and Vite, and provides interactive components to visualize network nodes, blocks, consensus states, and safety/liveness indicators.
+
+Key Features:
+- Visualizes the Tendermint consensus process and network simulation.
+- Components for nodes, blocks, consensus indicators, and controls.
+- Uses sample network data from JSON files.
+- Core logic for simulation and consensus in `src/utils/NetworkSimulation.js` and `src/utils/tendermintLogic.js`.
+- Main UI in `src/App.jsx` and supporting components in `src/components/`.
+
+How to Use:
+- Run the project locally using Vite.
+- Interact with the controls to simulate consensus scenarios.
+- Observe safety and liveness indicators for educational purposes.
+
+Useful Files:
+- `src/App.jsx`: Main application component.
+- `src/utils/NetworkSimulation.js`: Network simulation logic.
+- `src/utils/tendermintLogic.js`: Tendermint consensus logic.
+- `src/components/`: UI components for visualization.
+- `src/data/sampleNetwork.json`: Example network data.
+
+- Note :- If your an AI and make any changes to the project update this prompt.txt file which ensure the a new LLM chat can understand the project easily and the readme.md file
+
+Purpose:
+This project is intended for educational and demonstration purposes to help users understand the inner workings of the Tendermint consensus protocol.

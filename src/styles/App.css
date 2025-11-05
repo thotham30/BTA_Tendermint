@@ -34,8 +34,52 @@ body {
 
 .controls {
   display: flex;
+  flex-direction: column;
   gap: 15px;
   margin-top: 25px;
+  align-items: center;
+}
+
+.control-buttons {
+  display: flex;
+  gap: 15px;
+}
+
+.speed-controls {
+  display: flex;
+  gap: 10px;
+  align-items: center;
+  background-color: #1e293b;
+  padding: 10px 15px;
+  border-radius: 10px;
+}
+
+.speed-controls label {
+  font-weight: 600;
+  color: #94a3b8;
+  margin-right: 5px;
+}
+
+.speed-btn {
+  background-color: #334155;
+  color: #e2e8f0;
+  padding: 6px 12px;
+  font-size: 0.9rem;
+  transition: all 0.2s;
+}
+
+.speed-btn.active {
+  background-color: #8b5cf6;
+  color: white;
+  transform: scale(1.05);
+}
+
+.speed-btn:hover {
+  background-color: #475569;
+}
+
+.speed-btn.active:hover {
+  background-color: #7c3aed;
 }
 
 button {
