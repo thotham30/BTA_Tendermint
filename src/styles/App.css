@@ -26,6 +26,43 @@ body {
   color: #94a3b8;
 }
 
+/* Configuration Summary in Header */
+.config-summary {
+  display: flex;
+  gap: 20px;
+  justify-content: center;
+  margin-top: 15px;
+  padding: 10px 20px;
+  background-color: #1e293b;
+  border-radius: 8px;
+  flex-wrap: wrap;
+}
+
+.summary-item {
+  display: flex;
+  gap: 5px;
+  align-items: center;
+  padding: 5px 10px;
+  background-color: #334155;
+  border-radius: 6px;
+}
+
+.summary-item.warning {
+  background-color: #78350f;
+  border: 1px solid #f59e0b;
+}
+
+.summary-label {
+  color: #94a3b8;
+  font-size: 0.85rem;
+}
+
+.summary-value {
+  color: #f1f5f9;
+  font-weight: 600;
+  font-size: 0.9rem;
+}
+
 .indicators {
   display: flex;
   gap: 15px;
@@ -59,6 +96,73 @@ body {
 .control-buttons {
   display: flex;
   gap: 15px;
+  flex-wrap: wrap;
+  justify-content: center;
+}
+
+/* Configuration Info */
+.config-info {
+  display: flex;
+  flex-direction: column;
+  gap: 5px;
+  padding: 10px 15px;
+  background-color: #1e293b;
+  border-radius: 8px;
+  text-align: center;
+  min-width: 300px;
+}
+
+.config-name {
+  color: #94a3b8;
+  font-size: 0.85rem;
+}
+
+.config-name strong {
+  color: #38bdf8;
+  font-size: 0.95rem;
+}
+
+.config-summary {
+  color: #cbd5e1;
+  font-size: 0.8rem;
+}
+
+/* Preset Controls */
+.preset-controls {
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+  align-items: center;
+  background-color: #1e293b;
+  padding: 10px 15px;
+  border-radius: 10px;
+}
+
+.preset-controls label {
+  font-weight: 600;
+  color: #94a3b8;
+  font-size: 0.9rem;
+}
+
+.preset-buttons {
+  display: flex;
+  gap: 8px;
+  flex-wrap: wrap;
+}
+
+.preset-btn {
+  background-color: #334155;
+  color: #e2e8f0;
+  padding: 6px 12px;
+  font-size: 0.85rem;
+  transition: all 0.2s;
+  border: 1px solid #475569;
+}
+
+.preset-btn:hover {
+  background-color: #475569;
+  border-color: #64748b;
+  transform: translateY(-1px);
 }
 
 .speed-controls {
@@ -119,6 +223,18 @@ button {
 .reset-btn {
   background-color: #3b82f6;
   color: white;
+}
+
+.config-btn {
+  background-color: #8b5cf6;
+  color: white;
+  display: flex;
+  align-items: center;
+  gap: 5px;
+}
+
+.config-btn:hover {
+  background-color: #7c3aed;
 }
 
 button:hover {
@@ -249,4 +365,456 @@ button:hover {
 
 .logs-container::-webkit-scrollbar-thumb:hover {
   background: #64748b;
+}
+
+/* Configuration Panel Styles */
+.config-overlay {
+  position: fixed;
+  top: 0;
+  left: 0;
+  right: 0;
+  bottom: 0;
+  background-color: rgba(0, 0, 0, 0.7);
+  display: flex;
+  justify-content: center;
+  align-items: center;
+  z-index: 1000;
+  padding: 20px;
+}
+
+.config-panel {
+  background-color: #1e293b;
+  border-radius: 16px;
+  width: 100%;
+  max-width: 800px;
+  max-height: 90vh;
+  display: flex;
+  flex-direction: column;
+  box-shadow: 0 20px 25px -5px rgba(0, 0, 0, 0.5);
+  border: 2px solid #334155;
+}
+
+.config-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  padding: 20px 25px;
+  border-bottom: 2px solid #334155;
+  background-color: #0f172a;
+  border-radius: 14px 14px 0 0;
+}
+
+.config-header h2 {
+  color: #38bdf8;
+  margin: 0;
+  font-size: 1.5rem;
+}
+
+.close-btn {
+  background: none;
+  border: none;
+  color: #94a3b8;
+  font-size: 2rem;
+  cursor: pointer;
+  padding: 0;
+  width: 40px;
+  height: 40px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  border-radius: 8px;
+  transition: all 0.2s;
+}
+
+.close-btn:hover {
+  background-color: #334155;
+  color: #f1f5f9;
+}
+
+/* Presets Section */
+.config-presets {
+  padding: 15px 25px;
+  background-color: #0f172a;
+  border-bottom: 1px solid #334155;
+  display: flex;
+  gap: 10px;
+  align-items: center;
+  flex-wrap: wrap;
+}
+
+.config-presets label {
+  color: #94a3b8;
+  font-weight: 600;
+  font-size: 0.9rem;
+}
+
+.config-presets .preset-buttons {
+  display: flex;
+  gap: 8px;
+  flex-wrap: wrap;
+}
+
+.config-presets button {
+  background-color: #334155;
+  color: #e2e8f0;
+  padding: 6px 14px;
+  font-size: 0.85rem;
+  border-radius: 6px;
+  transition: all 0.2s;
+  border: 1px solid #475569;
+}
+
+.config-presets button:hover {
+  background-color: #475569;
+  border-color: #64748b;
+  transform: translateY(-1px);
+}
+
+/* Tabs */
+.config-tabs {
+  display: flex;
+  gap: 0;
+  background-color: #0f172a;
+  padding: 0 25px;
+  border-bottom: 2px solid #334155;
+}
+
+.tab-btn {
+  background: none;
+  border: none;
+  color: #94a3b8;
+  padding: 12px 20px;
+  cursor: pointer;
+  font-weight: 600;
+  font-size: 0.95rem;
+  border-bottom: 3px solid transparent;
+  transition: all 0.2s;
+}
+
+.tab-btn:hover {
+  color: #cbd5e1;
+  background-color: #1e293b;
+}
+
+.tab-btn.active {
+  color: #38bdf8;
+  border-bottom-color: #38bdf8;
+  background-color: #1e293b;
+}
+
+/* Content */
+.config-content {
+  padding: 25px;
+  overflow-y: auto;
+  flex: 1;
+}
+
+.config-section {
+  display: flex;
+  flex-direction: column;
+  gap: 20px;
+}
+
+.config-section h3 {
+  color: #38bdf8;
+  margin: 0 0 10px 0;
+  font-size: 1.2rem;
+}
+
+/* Fields */
+.config-field {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+}
+
+.config-field label {
+  color: #e2e8f0;
+  font-weight: 600;
+  font-size: 0.95rem;
+  display: flex;
+  flex-direction: column;
+  gap: 3px;
+}
+
+.field-desc {
+  color: #94a3b8;
+  font-size: 0.8rem;
+  font-weight: 400;
+  font-style: italic;
+}
+
+.config-field input[type="number"],
+.config-field select {
+  background-color: #0f172a;
+  border: 2px solid #334155;
+  border-radius: 8px;
+  padding: 10px 12px;
+  color: #f1f5f9;
+  font-size: 0.95rem;
+  transition: all 0.2s;
+}
+
+.config-field input[type="number"]:focus,
+.config-field select:focus {
+  outline: none;
+  border-color: #38bdf8;
+  background-color: #1e293b;
+}
+
+.config-field input[type="range"] {
+  width: 100%;
+  height: 6px;
+  background: #334155;
+  border-radius: 3px;
+  outline: none;
+  appearance: none;
+  -webkit-appearance: none;
+}
+
+.config-field input[type="range"]::-webkit-slider-thumb {
+  -webkit-appearance: none;
+  appearance: none;
+  width: 20px;
+  height: 20px;
+  background: #38bdf8;
+  cursor: pointer;
+  border-radius: 50%;
+  transition: all 0.2s;
+}
+
+.config-field input[type="range"]::-webkit-slider-thumb:hover {
+  background: #0ea5e9;
+  transform: scale(1.1);
+}
+
+.config-field input[type="range"]::-moz-range-thumb {
+  width: 20px;
+  height: 20px;
+  background: #38bdf8;
+  cursor: pointer;
+  border-radius: 50%;
+  border: none;
+  transition: all 0.2s;
+}
+
+.config-field input[type="range"]::-moz-range-thumb:hover {
+  background: #0ea5e9;
+  transform: scale(1.1);
+}
+
+.range-value {
+  color: #38bdf8;
+  font-weight: 600;
+  font-size: 0.9rem;
+  text-align: right;
+}
+
+/* Alerts */
+.config-alerts {
+  padding: 15px 25px;
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+}
+
+.alert {
+  padding: 12px 15px;
+  border-radius: 8px;
+  border-left: 4px solid;
+}
+
+.alert strong {
+  display: block;
+  margin-bottom: 5px;
+}
+
+.alert ul {
+  margin: 5px 0 0 0;
+  padding-left: 20px;
+}
+
+.alert li {
+  margin: 3px 0;
+  font-size: 0.85rem;
+}
+
+.alert-error {
+  background-color: #7f1d1d;
+  border-left-color: #ef4444;
+  color: #fecaca;
+}
+
+.alert-warning {
+  background-color: #78350f;
+  border-left-color: #f59e0b;
+  color: #fed7aa;
+}
+
+/* Estimates */
+.config-estimates {
+  padding: 15px 25px;
+  background-color: #0f172a;
+  border-top: 1px solid #334155;
+  border-bottom: 1px solid #334155;
+  display: flex;
+  gap: 30px;
+  justify-content: center;
+}
+
+.estimate-item {
+  display: flex;
+  gap: 10px;
+  align-items: center;
+}
+
+.estimate-label {
+  color: #94a3b8;
+  font-size: 0.9rem;
+}
+
+.estimate-value {
+  font-weight: 700;
+  font-size: 1.1rem;
+  padding: 4px 12px;
+  border-radius: 6px;
+}
+
+.estimate-value.high {
+  color: #10b981;
+  background-color: #064e3b;
+}
+
+.estimate-value.medium {
+  color: #f59e0b;
+  background-color: #78350f;
+}
+
+.estimate-value.low {
+  color: #ef4444;
+  background-color: #7f1d1d;
+}
+
+/* Actions */
+.config-actions {
+  padding: 20px 25px;
+  background-color: #0f172a;
+  border-radius: 0 0 14px 14px;
+  display: flex;
+  justify-content: space-between;
+  gap: 15px;
+  flex-wrap: wrap;
+}
+
+.action-group {
+  display: flex;
+  gap: 10px;
+}
+
+.btn-primary {
+  background-color: #10b981;
+  color: white;
+  padding: 10px 20px;
+  border: none;
+  border-radius: 8px;
+  cursor: pointer;
+  font-weight: 600;
+  font-size: 0.95rem;
+  transition: all 0.2s;
+}
+
+.btn-primary:hover:not(:disabled) {
+  background-color: #059669;
+  transform: translateY(-1px);
+}
+
+.btn-primary:disabled {
+  background-color: #334155;
+  color: #64748b;
+  cursor: not-allowed;
+}
+
+.btn-secondary {
+  background-color: #334155;
+  color: #e2e8f0;
+  padding: 10px 20px;
+  border: none;
+  border-radius: 8px;
+  cursor: pointer;
+  font-weight: 600;
+  font-size: 0.95rem;
+  transition: all 0.2s;
+  border: 1px solid #475569;
+}
+
+.btn-secondary:hover {
+  background-color: #475569;
+  border-color: #64748b;
+  transform: translateY(-1px);
+}
+
+/* Scrollbar for config content */
+.config-content::-webkit-scrollbar {
+  width: 8px;
+}
+
+.config-content::-webkit-scrollbar-track {
+  background: transparent;
+}
+
+.config-content::-webkit-scrollbar-thumb {
+  background: #475569;
+  border-radius: 4px;
+}
+
+.config-content::-webkit-scrollbar-thumb:hover {
+  background: #64748b;
+}
+
+/* Responsive Design */
+@media (max-width: 768px) {
+  .config-panel {
+    max-width: 95%;
+    max-height: 95vh;
+  }
+
+  .config-header,
+  .config-presets,
+  .config-content,
+  .config-alerts,
+  .config-estimates,
+  .config-actions {
+    padding-left: 15px;
+    padding-right: 15px;
+  }
+
+  .config-tabs {
+    padding-left: 15px;
+    padding-right: 15px;
+    overflow-x: auto;
+  }
+
+  .tab-btn {
+    padding: 12px 15px;
+    font-size: 0.85rem;
+    white-space: nowrap;
+  }
+
+  .config-estimates {
+    flex-direction: column;
+    gap: 10px;
+  }
+
+  .config-actions {
+    flex-direction: column;
+  }
+
+  .action-group {
+    width: 100%;
+    justify-content: stretch;
+  }
+
+  .action-group button {
+    flex: 1;
+  }
 }

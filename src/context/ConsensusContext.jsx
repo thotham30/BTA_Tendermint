@@ -8,10 +8,17 @@ import {
   initializeNetwork,
   simulateConsensusStep,
 } from "../utils/NetworkSimulation";
+import {
+  loadConfig,
+  DEFAULT_CONFIG,
+} from "../utils/ConfigManager";
 
 const ConsensusContext = createContext();
 
 export const ConsensusProvider = ({ children }) => {
+  const [config, setConfig] = useState(
+    loadConfig() || DEFAULT_CONFIG
+  );
   const [nodes, setNodes] = useState([]);
   const [blocks, setBlocks] = useState([]);
   const [round, setRound] = useState(0);
@@ -22,9 +29,12 @@ export const ConsensusProvider = ({ children }) => {
   const [logs, setLogs] = useState([]);
 
   useEffect(() => {
-    const initialNodes = initializeNetwork(4);
+    const initialNodes = initializeNetwork(
+      config.network.nodeCount,
+      config
+    );
     setNodes(initialNodes);
-  }, []);
+  }, [config.network.nodeCount]);
 
   const startConsensus = () => {
     setIsRunning(true);
@@ -37,7 +47,9 @@ export const ConsensusProvider = ({ children }) => {
   };
 
   const resetNetwork = () => {
-    setNodes(initializeNetwork(4));
+    setNodes(
+      initializeNetwork(config.network.nodeCount, config)
+    );
     setBlocks([]);
     setRound(0);
     setLiveness(true);
@@ -45,6 +57,22 @@ export const ConsensusProvider = ({ children }) => {
     setIsRunning(false);
     setLogs([]);
     addLog("Network reset successfully", "info");
+  };
+
+  const loadNewConfig = (newConfig) => {
+    setConfig(newConfig);
+    setNodes(
+      initializeNetwork(newConfig.network.nodeCount, newConfig)
+    );
+    setBlocks([]);
+    setRound(0);
+    setLiveness(true);
+    setSafety(true);
+    setIsRunning(false);
+    addLog(
+      `Configuration "${newConfig.name}" applied`,
+      "success"
+    );
   };
 
   const changeSpeed = (newSpeed) => {
@@ -58,10 +86,10 @@ export const ConsensusProvider = ({ children }) => {
 
   useEffect(() => {
     if (!isRunning) return;
-    const baseDelay = 1500; // Base delay in ms
+    const baseDelay = config.consensus.roundTimeout || 1500; // Use config or default
     const interval = setInterval(() => {
       const { updatedNodes, newBlock, newLiveness, newSafety } =
-        simulateConsensusStep(nodes, blocks);
+        simulateConsensusStep(nodes, blocks, config);
       setNodes(updatedNodes);
       if (newBlock) {
         setBlocks((prev) => [...prev, newBlock]);
@@ -94,20 +122,31 @@ export const ConsensusProvider = ({ children }) => {
         setSafety(newSafety);
       }
 
-      addLog(
-        `Round ${Math.floor(
-          Date.now() / 1000
-        )}: Consensus step executed`,
-        "info"
-      );
+      if (config.simulation.logLevel !== "minimal") {
+        addLog(
+          `Round ${Math.floor(
+            Date.now() / 1000
+          )}: Consensus step executed`,
+          "info"
+        );
+      }
     }, baseDelay / speed);
 
     return () => clearInterval(interval);
-  }, [isRunning, nodes, blocks, speed, liveness, safety]);
+  }, [
+    isRunning,
+    nodes,
+    blocks,
+    speed,
+    liveness,
+    safety,
+    config,
+  ]);
 
   return (
     <ConsensusContext.Provider
       value={{
+        config,
         nodes,
         blocks,
         round,
@@ -121,6 +160,7 @@ export const ConsensusProvider = ({ children }) => {
         resetNetwork,
         changeSpeed,
         addLog,
+        loadNewConfig,
       }}
     >
       {children}
