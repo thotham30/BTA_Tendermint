@@ -11,6 +11,7 @@ import {
 import {
   loadConfig,
   DEFAULT_CONFIG,
+  TIMEOUT_LIMITS,
 } from "../utils/ConfigManager";
 
 const ConsensusContext = createContext();
@@ -56,11 +57,36 @@ export const ConsensusProvider = ({ children }) => {
   const [currentRoundVotes, setCurrentRoundVotes] =
     useState(null);
   const [showVotingDetails, setShowVotingDetails] =
-    useState(true);
+    useState(false);
   const [showVotingHistory, setShowVotingHistory] =
     useState(false);
   const [selectedRoundForDetails, setSelectedRoundForDetails] =
     useState(null);
+
+  // Step-by-Step Mode State
+  const [stepMode, setStepMode] = useState(false);
+  const [currentStep, setCurrentStep] = useState(0);
+  const [stepHistory, setStepHistory] = useState([]);
+  const [stepDescription, setStepDescription] =
+    useState("Ready to start");
+  const [autoPlaySteps, setAutoPlaySteps] = useState(false);
+  const [stepState, setStepState] = useState(null); // Current step's detailed state
+  const [highlightedNodes, setHighlightedNodes] = useState([]);
+  const [stepModeRound, setStepModeRound] = useState(0); // Track round in step mode
+
+  // Network Partition State
+  const [partitionActive, setPartitionActive] = useState(false);
+  const [partitionedNodes, setPartitionedNodes] = useState([]);
+  const [partitionType, setPartitionType] = useState("single"); // "single", "split", "gradual"
+  const [networkStats, setNetworkStats] = useState({
+    messagesSent: 0,
+    messagesDelivered: 0,
+    messagesLost: 0,
+  });
+
+  // Network Mode State (synchronous vs asynchronous)
+  const [isSynchronousMode, setIsSynchronousMode] =
+    useState(true);
 
   useEffect(() => {
     const initialNodes = initializeNetwork(
@@ -72,6 +98,7 @@ export const ConsensusProvider = ({ children }) => {
 
   const startConsensus = () => {
     setIsRunning(true);
+    setRoundStartTime(Date.now()); // Initialize round start time
     addLog("Consensus simulation started", "success");
   };
 
@@ -100,6 +127,18 @@ export const ConsensusProvider = ({ children }) => {
     setConsecutiveTimeouts(0);
     setTimeoutHistory([]);
     setCurrentProposer(null);
+    // Reset step mode state
+    setCurrentStep(0);
+    setStepHistory([]);
+    setStepDescription("Ready to start");
+    setStepState(null);
+    setHighlightedNodes([]);
+    // Reset network partition state
+    setPartitionActive(false);
+    setPartitionedNodes([]);
+    setPartitionType("single");
+    resetNetworkStats();
+    // Note: isSynchronousMode is not reset to preserve user preference
     addLog("Network reset successfully", "info");
   };
 
@@ -177,8 +216,8 @@ export const ConsensusProvider = ({ children }) => {
     if (timeoutEscalationEnabled) {
       const newTimeout = Math.min(
         timeoutDuration * timeoutMultiplier,
-        30000
-      ); // Cap at 30s
+        TIMEOUT_LIMITS.maxTimeout
+      );
       setTimeoutDuration(newTimeout);
       addLog(
         `Round ${round} timeout! Escalating timeout to ${Math.round(
@@ -258,6 +297,202 @@ export const ConsensusProvider = ({ children }) => {
     setSelectedRoundForDetails(round);
   };
 
+  // Step-by-Step Mode Functions
+  const toggleStepMode = () => {
+    const newStepMode = !stepMode;
+    setStepMode(newStepMode);
+
+    if (newStepMode) {
+      // Entering step mode - pause if running
+      if (isRunning) {
+        setIsRunning(false);
+      }
+      setCurrentStep(0);
+      setStepModeRound(0); // Reset step mode round
+      setStepDescription(
+        "Round Start - Ready to begin consensus"
+      );
+      addLog("Switched to Step-by-Step Mode", "info");
+    } else {
+      // Exiting step mode
+      setCurrentStep(0);
+      setStepHistory([]);
+      setStepState(null);
+      setHighlightedNodes([]);
+      setStepModeRound(0); // Reset step mode round
+      addLog("Switched to Continuous Mode", "info");
+    }
+  };
+
+  const nextStep = () => {
+    if (!stepMode) return;
+
+    // Save current state to history
+    const historyEntry = {
+      step: currentStep,
+      nodes: [...nodes],
+      blocks: [...blocks],
+      round,
+      description: stepDescription,
+      stepState,
+      timestamp: Date.now(),
+    };
+    setStepHistory((prev) => [...prev, historyEntry]);
+
+    // Move to next step
+    setCurrentStep((prev) => prev + 1);
+  };
+
+  const previousStep = () => {
+    if (!stepMode || stepHistory.length === 0) return;
+
+    // Pop the last state from history
+    const lastState = stepHistory[stepHistory.length - 1];
+    setNodes(lastState.nodes);
+    setBlocks(lastState.blocks);
+    setRound(lastState.round);
+    setCurrentStep(lastState.step);
+    setStepDescription(lastState.description);
+    setStepState(lastState.stepState);
+
+    // Remove from history
+    setStepHistory((prev) => prev.slice(0, -1));
+    addLog(`Reverted to step ${lastState.step}`, "info");
+  };
+
+  const goToRoundStart = () => {
+    if (!stepMode) return;
+
+    // Increment step mode round when starting a new round (not the first time)
+    if (currentStep > 0) {
+      setStepModeRound((prev) => prev + 1);
+    }
+
+    setCurrentStep(0);
+    setStepDescription("Round Start - Ready to begin consensus");
+    setStepState(null);
+    setHighlightedNodes([]);
+    addLog(
+      `Starting Round ${
+        stepModeRound + (currentStep > 0 ? 1 : 0)
+      }`,
+      "info"
+    );
+  };
+
+  const toggleAutoPlaySteps = () => {
+    setAutoPlaySteps((prev) => !prev);
+  };
+
+  const updateStepState = (state) => {
+    setStepState(state);
+    // Update current proposer from step state
+    if (state?.proposer) {
+      setCurrentProposer(state.proposer);
+    }
+  };
+
+  const updateStepDescription = (description) => {
+    setStepDescription(description);
+  };
+
+  const updateHighlightedNodes = (nodeIds) => {
+    setHighlightedNodes(nodeIds);
+  };
+
+  const updateNodes = (newNodes) => {
+    setNodes(newNodes);
+  };
+
+  const addBlock = (newBlock) => {
+    setBlocks((prev) => [...prev, newBlock]);
+  };
+
+  // Network Partition Functions
+  const togglePartition = () => {
+    const newState = !partitionActive;
+    setPartitionActive(newState);
+    if (newState) {
+      applyPartitionType(partitionType);
+      addLog(
+        `Network partition activated (${partitionType})`,
+        "warning"
+      );
+    } else {
+      setPartitionedNodes([]);
+      addLog("Network partition deactivated", "success");
+    }
+  };
+
+  const applyPartitionType = (type) => {
+    const nodeCount = nodes.length;
+    let partitioned = [];
+
+    switch (type) {
+      case "single":
+        // Isolate first node
+        partitioned = [nodes[0]?.id].filter(Boolean);
+        break;
+      case "split":
+        // Split network in half
+        const half = Math.floor(nodeCount / 2);
+        partitioned = nodes.slice(0, half).map((n) => n.id);
+        break;
+      case "gradual":
+        // Simulate gradual degradation - randomly select nodes
+        const count = Math.max(1, Math.floor(nodeCount * 0.3));
+        partitioned = nodes
+          .sort(() => Math.random() - 0.5)
+          .slice(0, count)
+          .map((n) => n.id);
+        break;
+      default:
+        partitioned = [];
+    }
+
+    setPartitionedNodes(partitioned);
+    addLog(
+      `Partition type changed to ${type}, ${partitioned.length} nodes affected`,
+      "info"
+    );
+  };
+
+  const changePartitionType = (type) => {
+    setPartitionType(type);
+    if (partitionActive) {
+      applyPartitionType(type);
+    }
+  };
+
+  const updateNetworkStats = (stats) => {
+    setNetworkStats((prev) => ({
+      messagesSent: prev.messagesSent + (stats.sent || 0),
+      messagesDelivered:
+        prev.messagesDelivered + (stats.delivered || 0),
+      messagesLost: prev.messagesLost + (stats.lost || 0),
+    }));
+  };
+
+  const resetNetworkStats = () => {
+    setNetworkStats({
+      messagesSent: 0,
+      messagesDelivered: 0,
+      messagesLost: 0,
+    });
+  };
+
+  const toggleNetworkMode = () => {
+    setIsSynchronousMode((prev) => !prev);
+    addLog(
+      `Network mode switched to ${
+        !isSynchronousMode
+          ? "Synchronous (no timeouts)"
+          : "Partially Synchronous (with timeouts)"
+      }`,
+      "info"
+    );
+  };
+
   useEffect(() => {
     if (!isRunning) return;
     const baseDelay = config.consensus.roundTimeout || 1500; // Use config or default
@@ -278,6 +513,7 @@ export const ConsensusProvider = ({ children }) => {
         timeoutDuration,
         handleRoundTimeout,
         currentRound: round,
+        isSynchronousMode,
       });
 
       setNodes(updatedNodes);
@@ -402,6 +638,20 @@ export const ConsensusProvider = ({ children }) => {
         timeoutEscalationEnabled,
         timeoutHistory,
         currentProposer,
+        // Step-by-Step Mode state
+        stepMode,
+        currentStep,
+        stepHistory,
+        stepDescription,
+        autoPlaySteps,
+        stepState,
+        highlightedNodes,
+        stepModeRound,
+        // Network Partition state
+        partitionActive,
+        partitionedNodes,
+        partitionType,
+        networkStats,
         startConsensus,
         stopConsensus,
         resetNetwork,
@@ -418,6 +668,25 @@ export const ConsensusProvider = ({ children }) => {
         updateTimeoutSettings,
         handleRoundTimeout,
         handleSuccessfulCommit,
+        // Step-by-Step Mode functions
+        toggleStepMode,
+        nextStep,
+        previousStep,
+        goToRoundStart,
+        toggleAutoPlaySteps,
+        updateStepState,
+        updateStepDescription,
+        updateHighlightedNodes,
+        updateNodes,
+        addBlock,
+        // Network Partition functions
+        togglePartition,
+        changePartitionType,
+        updateNetworkStats,
+        resetNetworkStats,
+        // Network Mode functions
+        isSynchronousMode,
+        toggleNetworkMode,
       }}
     >
       {children}

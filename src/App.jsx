@@ -8,10 +8,14 @@ import Controls from "./components/Controls";
 import LivenessIndicator from "./components/LivenessIndicator";
 import SafetyIndicator from "./components/SafetyIndicator";
 import LogsWindow from "./components/LogsWindow";
+import StepByStepControls from "./components/StepByStepControls";
+import StateInspector from "./components/StateInspector";
+import DetailedStepView from "./components/DetailedStepView";
+import { formatVoteThreshold } from "./utils/ConfigManager";
 import "./styles/App.css";
 
 function AppContent() {
-  const { config } = useConsensus();
+  const { config, stepMode } = useConsensus();
 
   return (
     <div className="app-container">
@@ -34,15 +38,9 @@ function AppContent() {
           <div className="summary-item">
             <span className="summary-label">Threshold:</span>
             <span className="summary-value">
-              {config.consensus.voteThreshold === 0.67
-                ? "2/3+"
-                : config.consensus.voteThreshold === 0.5
-                ? "1/2+"
-                : config.consensus.voteThreshold === 0.75
-                ? "3/4+"
-                : `${(
-                    config.consensus.voteThreshold * 100
-                  ).toFixed(0)}%`}
+              {formatVoteThreshold(
+                config.consensus.voteThreshold
+              )}
             </span>
           </div>
           {config.nodeBehavior.byzantineCount > 0 && (
@@ -69,13 +67,35 @@ function AppContent() {
         <SafetyIndicator />
       </div>
 
-      <div className="main-content">
+      {/* Step-by-Step Controls */}
+      {stepMode && <StepByStepControls />}
+
+      <div
+        className={`main-content ${
+          stepMode ? "step-mode-layout" : ""
+        }`}
+      >
         <div className="left-panel">
           <ConsensusVisualizer />
           <Controls />
         </div>
-        <LogsWindow />
+
+        {stepMode ? (
+          <div className="right-panel-step-mode">
+            <StateInspector />
+            <DetailedStepView />
+          </div>
+        ) : (
+          <LogsWindow />
+        )}
       </div>
+
+      {/* Logs in step mode - at the bottom */}
+      {stepMode && (
+        <div className="step-mode-logs">
+          <LogsWindow />
+        </div>
+      )}
     </div>
   );
 }

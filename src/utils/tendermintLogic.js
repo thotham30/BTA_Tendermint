@@ -1,5 +1,52 @@
 // src/utils/tendermintLogic.js
 
+import { DEFAULTS } from "./ConfigManager";
+
+/**
+ * Consensus Step Definitions
+ * Each step represents a distinct phase in the Tendermint consensus process
+ */
+export const CONSENSUS_STEPS = {
+  ROUND_START: 0,
+  BLOCK_PROPOSAL: 1,
+  PREVOTE: 2,
+  PREVOTE_TALLY: 3,
+  PRECOMMIT: 4,
+  PRECOMMIT_TALLY: 5,
+  COMMIT: 6,
+  ROUND_COMPLETE: 7,
+};
+
+export const STEP_DESCRIPTIONS = {
+  [CONSENSUS_STEPS.ROUND_START]:
+    "Round Start - Initialize round and select proposer",
+  [CONSENSUS_STEPS.BLOCK_PROPOSAL]:
+    "Block Proposal - Proposer creates and broadcasts block",
+  [CONSENSUS_STEPS.PREVOTE]:
+    "Prevote Phase - Validators vote on the proposed block",
+  [CONSENSUS_STEPS.PREVOTE_TALLY]:
+    "Prevote Tally - Count prevotes and check if > 2/3",
+  [CONSENSUS_STEPS.PRECOMMIT]:
+    "Precommit Phase - Validators commit to the block",
+  [CONSENSUS_STEPS.PRECOMMIT_TALLY]:
+    "Precommit Tally - Count precommits and check if > 2/3",
+  [CONSENSUS_STEPS.COMMIT]:
+    "Commit - Block is finalized and added to chain",
+  [CONSENSUS_STEPS.ROUND_COMPLETE]:
+    "Round Complete - Reset for next round or timeout",
+};
+
+export const STEP_PHASES = {
+  [CONSENSUS_STEPS.ROUND_START]: "initialization",
+  [CONSENSUS_STEPS.BLOCK_PROPOSAL]: "proposal",
+  [CONSENSUS_STEPS.PREVOTE]: "voting",
+  [CONSENSUS_STEPS.PREVOTE_TALLY]: "voting",
+  [CONSENSUS_STEPS.PRECOMMIT]: "voting",
+  [CONSENSUS_STEPS.PRECOMMIT_TALLY]: "voting",
+  [CONSENSUS_STEPS.COMMIT]: "commit",
+  [CONSENSUS_STEPS.ROUND_COMPLETE]: "complete",
+};
+
 /**
  * VotingRound data structure for tracking consensus voting
  * @typedef {Object} VotingRound
@@ -29,7 +76,8 @@ export function getNextProposer(nodes, round) {
 }
 
 export function createBlock(proposerId, height, config) {
-  const blockSize = config?.consensus?.blockSize || 10;
+  const blockSize =
+    config?.consensus?.blockSize || DEFAULTS.blockSize;
   const txCount = Math.floor(Math.random() * blockSize) + 1;
 
   return {
@@ -43,9 +91,10 @@ export function createBlock(proposerId, height, config) {
 
 export function voteOnBlock(nodes, block, config) {
   const voteThreshold =
-    config?.consensus?.voteThreshold || 2 / 3;
+    config?.consensus?.voteThreshold || DEFAULTS.voteThreshold;
   const responseVariance =
-    config?.nodeBehavior?.responseVariance || 50;
+    config?.nodeBehavior?.responseVariance ||
+    DEFAULTS.responseVariance;
 
   let byzantineDetected = false;
 
@@ -89,15 +138,12 @@ export function voteOnBlock(nodes, block, config) {
       }
     }
 
-    // Honest node with response variance
-    const baseApprovalRate = 0.9;
-    const varianceImpact =
-      (Math.random() * responseVariance) / 1000;
-    const approval = Math.random() > 0.1 - varianceImpact;
-
+    // Honest node - always votes "yes" (100% honest)
+    // For educational purposes, honest nodes are perfectly reliable
+    // Network issues (downtime, partitions) are handled separately
     return {
       nodeId: node.id,
-      vote: approval,
+      vote: true, // Always approve
       isByzantine: false,
     };
   });
@@ -213,4 +259,291 @@ export function updatePrecommits(
 export function finalizeVotingRound(votingRound, approved) {
   votingRound.result = approved ? "approved" : "rejected";
   return votingRound;
+}
+
+/**
+ * Execute a specific consensus step
+ * Returns the state after executing that step
+ */
+export function executeConsensusStep(
+  step,
+  nodes,
+  blocks,
+  config,
+  previousStepState = null,
+  customRound = null
+) {
+  const round =
+    customRound !== null ? customRound : blocks.length;
+  const voteThreshold =
+    config?.consensus?.voteThreshold || DEFAULTS.voteThreshold;
+
+  switch (step) {
+    case CONSENSUS_STEPS.ROUND_START: {
+      // Step 0: Initialize round and select proposer
+      const proposer = getNextProposer(nodes, round);
+      return {
+        step: CONSENSUS_STEPS.ROUND_START,
+        description:
+          STEP_DESCRIPTIONS[CONSENSUS_STEPS.ROUND_START],
+        phase: STEP_PHASES[CONSENSUS_STEPS.ROUND_START],
+        proposer,
+        highlightedNodes: [proposer.id],
+        block: null,
+        votingRound: null,
+        nodes: nodes.map((n) => ({
+          ...n,
+          state: "Idle",
+          color: n.isByzantine ? "#ff6b6b" : "#ccc",
+        })),
+      };
+    }
+
+    case CONSENSUS_STEPS.BLOCK_PROPOSAL: {
+      // Step 1: Proposer creates block
+      const proposer =
+        previousStepState?.proposer ||
+        getNextProposer(nodes, round);
+      const block = createBlock(proposer.id, round + 1, config);
+      const votingRound = createVotingRound(
+        round + 1,
+        round + 1,
+        proposer.id,
+        nodes
+      );
+
+      return {
+        step: CONSENSUS_STEPS.BLOCK_PROPOSAL,
+        description:
+          STEP_DESCRIPTIONS[CONSENSUS_STEPS.BLOCK_PROPOSAL],
+        phase: STEP_PHASES[CONSENSUS_STEPS.BLOCK_PROPOSAL],
+        proposer,
+        highlightedNodes: [proposer.id],
+        block,
+        votingRound,
+        nodes: nodes.map((n) => ({
+          ...n,
+          state: n.id === proposer.id ? "Proposing" : "Idle",
+          color:
+            n.id === proposer.id
+              ? "#f9c74f"
+              : n.isByzantine
+              ? "#ff6b6b"
+              : "#ccc",
+        })),
+      };
+    }
+
+    case CONSENSUS_STEPS.PREVOTE: {
+      // Step 2: All nodes vote on the block
+      const { block, votingRound, proposer } = previousStepState;
+      const prevoteResult = voteOnBlock(nodes, block, config);
+      updatePrevotes(
+        votingRound,
+        prevoteResult.votes,
+        voteThreshold
+      );
+
+      return {
+        step: CONSENSUS_STEPS.PREVOTE,
+        description: STEP_DESCRIPTIONS[CONSENSUS_STEPS.PREVOTE],
+        phase: STEP_PHASES[CONSENSUS_STEPS.PREVOTE],
+        proposer,
+        highlightedNodes: nodes.map((n) => n.id),
+        block,
+        votingRound,
+        prevoteResult,
+        nodes: nodes.map((n) => ({
+          ...n,
+          state: "Prevoting",
+          color: n.isByzantine ? "#ff6b6b" : "#4a90e2",
+        })),
+      };
+    }
+
+    case CONSENSUS_STEPS.PREVOTE_TALLY: {
+      // Step 3: Count prevotes and check threshold
+      const { block, votingRound, proposer, prevoteResult } =
+        previousStepState;
+
+      return {
+        step: CONSENSUS_STEPS.PREVOTE_TALLY,
+        description:
+          STEP_DESCRIPTIONS[CONSENSUS_STEPS.PREVOTE_TALLY],
+        phase: STEP_PHASES[CONSENSUS_STEPS.PREVOTE_TALLY],
+        proposer,
+        highlightedNodes: [],
+        block,
+        votingRound,
+        prevoteResult,
+        nodes: nodes.map((n) => ({
+          ...n,
+          state: "Waiting",
+          color: n.isByzantine ? "#ff6b6b" : "#ccc",
+        })),
+      };
+    }
+
+    case CONSENSUS_STEPS.PRECOMMIT: {
+      // Step 4: If prevotes pass, nodes precommit
+      const { block, votingRound, proposer, prevoteResult } =
+        previousStepState;
+
+      let precommitResult;
+      if (votingRound.prevoteThresholdMet) {
+        precommitResult = voteOnBlock(nodes, block, config);
+        updatePrecommits(
+          votingRound,
+          precommitResult.votes,
+          voteThreshold
+        );
+      } else {
+        // No precommit if prevote didn't pass
+        precommitResult = {
+          votes: prevoteResult.votes.map((v) => ({
+            ...v,
+            vote: null,
+          })),
+          approved: false,
+        };
+      }
+
+      return {
+        step: CONSENSUS_STEPS.PRECOMMIT,
+        description:
+          STEP_DESCRIPTIONS[CONSENSUS_STEPS.PRECOMMIT],
+        phase: STEP_PHASES[CONSENSUS_STEPS.PRECOMMIT],
+        proposer,
+        highlightedNodes: votingRound.prevoteThresholdMet
+          ? nodes.map((n) => n.id)
+          : [],
+        block,
+        votingRound,
+        prevoteResult,
+        precommitResult,
+        nodes: nodes.map((n) => ({
+          ...n,
+          state: votingRound.prevoteThresholdMet
+            ? "Precommitting"
+            : "Waiting",
+          color: votingRound.prevoteThresholdMet
+            ? n.isByzantine
+              ? "#ff6b6b"
+              : "#4a90e2"
+            : n.isByzantine
+            ? "#ff6b6b"
+            : "#ccc",
+        })),
+      };
+    }
+
+    case CONSENSUS_STEPS.PRECOMMIT_TALLY: {
+      // Step 5: Count precommits and check threshold
+      const {
+        block,
+        votingRound,
+        proposer,
+        prevoteResult,
+        precommitResult,
+      } = previousStepState;
+
+      return {
+        step: CONSENSUS_STEPS.PRECOMMIT_TALLY,
+        description:
+          STEP_DESCRIPTIONS[CONSENSUS_STEPS.PRECOMMIT_TALLY],
+        phase: STEP_PHASES[CONSENSUS_STEPS.PRECOMMIT_TALLY],
+        proposer,
+        highlightedNodes: [],
+        block,
+        votingRound,
+        prevoteResult,
+        precommitResult,
+        nodes: nodes.map((n) => ({
+          ...n,
+          state: "Waiting",
+          color: n.isByzantine ? "#ff6b6b" : "#ccc",
+        })),
+      };
+    }
+
+    case CONSENSUS_STEPS.COMMIT: {
+      // Step 6: Commit block if precommits pass
+      const {
+        block,
+        votingRound,
+        proposer,
+        prevoteResult,
+        precommitResult,
+      } = previousStepState;
+
+      const committed =
+        votingRound.precommitThresholdMet &&
+        precommitResult.approved;
+
+      if (committed) {
+        finalizeVotingRound(votingRound, true);
+      } else {
+        finalizeVotingRound(votingRound, false);
+      }
+
+      return {
+        step: CONSENSUS_STEPS.COMMIT,
+        description: STEP_DESCRIPTIONS[CONSENSUS_STEPS.COMMIT],
+        phase: STEP_PHASES[CONSENSUS_STEPS.COMMIT],
+        proposer,
+        highlightedNodes: committed
+          ? nodes.map((n) => n.id)
+          : [],
+        block: committed ? block : null,
+        votingRound,
+        prevoteResult,
+        precommitResult,
+        committed,
+        nodes: nodes.map((n) => ({
+          ...n,
+          state: committed ? "Committed" : "Timeout",
+          color: committed
+            ? n.isByzantine
+              ? "#ff6b6b"
+              : "#90be6d"
+            : n.isByzantine
+            ? "#ff6b6b"
+            : "#f94144",
+        })),
+      };
+    }
+
+    case CONSENSUS_STEPS.ROUND_COMPLETE: {
+      // Step 7: Reset for next round
+      const { committed, block, votingRound } =
+        previousStepState;
+
+      return {
+        step: CONSENSUS_STEPS.ROUND_COMPLETE,
+        description:
+          STEP_DESCRIPTIONS[CONSENSUS_STEPS.ROUND_COMPLETE],
+        phase: STEP_PHASES[CONSENSUS_STEPS.ROUND_COMPLETE],
+        proposer: null,
+        highlightedNodes: [],
+        block: committed ? block : null,
+        votingRound,
+        committed,
+        nodes: nodes.map((n) => ({
+          ...n,
+          state: "Idle",
+          color: n.isByzantine ? "#ff6b6b" : "#ccc",
+        })),
+      };
+    }
+
+    default:
+      return null;
+  }
+}
+
+/**
+ * Get the total number of steps in a consensus round
+ */
+export function getTotalSteps() {
+  return Object.keys(CONSENSUS_STEPS).length;
 }

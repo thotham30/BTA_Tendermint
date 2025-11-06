@@ -9,6 +9,7 @@ import VotingDetails from "./VotingDetails";
 import VotingStatistics from "./VotingStatistics";
 import TimeoutVisualizer from "./TimeoutVisualizer";
 import TimeoutStats from "./TimeoutStats";
+import NetworkPartition from "./NetworkPartition";
 import { useConsensus } from "../context/ConsensusContext";
 import "../styles/Visualizer.css";
 
@@ -21,30 +22,60 @@ export default function ConsensusVisualizer() {
     showVotingHistory,
     currentRoundVotes,
     isRunning,
+    stepMode,
+    highlightedNodes,
+    stepState,
+    isSynchronousMode,
+    stepModeRound,
   } = useConsensus();
+
+  // Use stepModeRound in step mode, otherwise use continuous round
+  const displayRound = stepMode ? stepModeRound : round;
 
   return (
     <div className="visualizer-container">
-      <h2>Consensus Round: {round}</h2>
+      <h2>Consensus Round: {displayRound}</h2>
 
-      {/* Timeout Visualizer Section */}
-      {isRunning && (
+      {/* Step-by-Step Phase Indicator */}
+      {stepMode && stepState && (
+        <div
+          className={`phase-indicator phase-${stepState.phase}`}
+        >
+          <span className="phase-label">
+            {stepState.phase.toUpperCase()}
+          </span>
+        </div>
+      )}
+
+      {/* Timeout Visualizer Section - Only in asynchronous mode */}
+      {isRunning && !stepMode && !isSynchronousMode && (
         <div className="timeout-section">
           <TimeoutVisualizer />
         </div>
       )}
 
+      {/* Network Partition Panel */}
+      <NetworkPartition />
+
       <div className="nodes-container">
-        {nodes.map((node) => (
-          <motion.div
-            key={node.id}
-            initial={{ scale: 0 }}
-            animate={{ scale: 1 }}
-            transition={{ duration: 0.3 }}
-          >
-            <Node node={node} />
-          </motion.div>
-        ))}
+        {nodes.map((node) => {
+          const isHighlighted =
+            stepMode && highlightedNodes.includes(node.id);
+          return (
+            <motion.div
+              key={node.id}
+              initial={{ scale: 0 }}
+              animate={{
+                scale: isHighlighted ? 1.2 : 1,
+                borderWidth: isHighlighted ? 3 : 0,
+              }}
+              transition={{ duration: 0.3 }}
+              className={isHighlighted ? "highlighted-node" : ""}
+            >
+              <Node node={node} isHighlighted={isHighlighted} />
+            </motion.div>
+          );
+        })}
       </div>
 
       {/* Voting Visualization Section */}

@@ -2,13 +2,24 @@ import React from "react";
 import { motion } from "framer-motion";
 import { useConsensus } from "../context/ConsensusContext";
 
-export default function Node({ node }) {
-  const { id, state, color } = node;
-  const { currentRoundVotes, currentProposer } = useConsensus();
+export default function Node({ node, isHighlighted = false }) {
+  const { id, state, color, isPartitioned } = node;
+  const {
+    currentRoundVotes,
+    currentProposer,
+    partitionActive,
+    config,
+  } = useConsensus();
 
   // Check if this node is the current proposer
   const isProposer =
     currentProposer && currentProposer.id === id;
+
+  // Get network health indicators
+  const latency = config?.network?.latency || 0;
+  const packetLoss = config?.network?.packetLoss || 0;
+  const hasNetworkIssues =
+    latency > 1000 || packetLoss > 20 || isPartitioned;
 
   // Get vote status for this node
   const getVoteStatus = () => {
@@ -34,7 +45,7 @@ export default function Node({ node }) {
     if (voteStatus.vote === true) {
       return (
         <motion.div
-          className="vote-badge vote-yes-badge"
+          className="vote-yes-badge"
           initial={{ scale: 0 }}
           animate={{ scale: 1 }}
           transition={{ type: "spring", stiffness: 500 }}
@@ -45,7 +56,7 @@ export default function Node({ node }) {
     } else if (voteStatus.vote === false) {
       return (
         <motion.div
-          className="vote-badge vote-no-badge"
+          className="vote-no-badge"
           initial={{ scale: 0 }}
           animate={{ scale: 1 }}
           transition={{ type: "spring", stiffness: 500 }}
@@ -54,22 +65,47 @@ export default function Node({ node }) {
         </motion.div>
       );
     } else {
-      return (
-        <div className="vote-badge vote-pending-badge">?</div>
-      );
+      return <div className="vote-pending-badge">?</div>;
     }
   };
 
   return (
     <motion.div
-      className={`node ${isProposer ? "node-proposer" : ""}`}
-      style={{ backgroundColor: color }}
+      className={`node ${isProposer ? "node-proposer" : ""} ${
+        isHighlighted ? "node-highlighted" : ""
+      } ${isPartitioned ? "node-partitioned" : ""}`}
+      style={{
+        backgroundColor: color,
+        boxShadow: isHighlighted
+          ? "0 0 20px rgba(255, 215, 0, 0.8)"
+          : "none",
+        border: isPartitioned ? "3px dashed #f59e0b" : undefined,
+      }}
       whileHover={{ scale: 1.1 }}
+      title={
+        isPartitioned
+          ? `Node ${id} - Partitioned (disconnected from network)`
+          : node.isByzantine
+          ? `Node ${id} - Byzantine: ${node.byzantineType}`
+          : `Node ${id} - ${state}`
+      }
     >
       <div className="node-id">Node {id}</div>
       <div className="node-state">{state}</div>
       {renderVoteBadge()}
-      {node.isByzantine && (
+
+      {/* Partition indicator - highest priority */}
+      {isPartitioned && (
+        <div
+          className="partition-indicator"
+          title="Node is partitioned from the network"
+        >
+          🔌
+        </div>
+      )}
+
+      {/* Byzantine indicator */}
+      {node.isByzantine && !isPartitioned && (
         <div
           className="byzantine-indicator"
           title={`Byzantine: ${node.byzantineType}`}
@@ -77,13 +113,33 @@ export default function Node({ node }) {
           ⚠
         </div>
       )}
-      {isProposer && (
+
+      {/* Network health indicator */}
+      {hasNetworkIssues && !isPartitioned && (
+        <div
+          className="network-health-indicator"
+          title={`Network issues: ${latency}ms latency, ${packetLoss}% packet loss`}
+        >
+          📡
+        </div>
+      )}
+
+      {/* Proposer indicator (never shown for Byzantine or partitioned) */}
+      {isProposer && !isPartitioned && (
         <div
           className="proposer-indicator"
           title="Current Proposer"
         >
           👑
         </div>
+      )}
+
+      {isHighlighted && (
+        <motion.div
+          className="highlight-ring"
+          animate={{ scale: [1, 1.2, 1] }}
+          transition={{ duration: 1, repeat: Infinity }}
+        />
       )}
     </motion.div>
   );

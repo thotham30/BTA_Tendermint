@@ -7,7 +7,11 @@ import {
   updatePrevotes,
   updatePrecommits,
   finalizeVotingRound,
+  executeConsensusStep,
+  CONSENSUS_STEPS,
+  getTotalSteps,
 } from "./tendermintLogic";
+import { DEFAULTS } from "./ConfigManager";
 
 export function initializeNetwork(nodeCount, config) {
   const byzantineCount =
@@ -42,29 +46,59 @@ export function simulateConsensusStep(
     timeoutDuration,
     handleRoundTimeout,
     currentRound,
+    partitionActive,
+    partitionedNodes,
+    updateNetworkStats,
+    addLog,
+    isSynchronousMode,
   } = consensusContext;
 
   const elapsedTime = Date.now() - roundStartTime;
-  const timedOut = elapsedTime >= timeoutDuration;
+  // In synchronous mode, disable timeouts
+  const timedOut =
+    !isSynchronousMode && elapsedTime >= timeoutDuration;
 
   // Apply network latency simulation
-  const latency = config?.network?.latency || 100;
-  const packetLoss = config?.network?.packetLoss || 0;
+  const latency = config?.network?.latency || DEFAULTS.latency;
+  const packetLoss =
+    config?.network?.packetLoss || DEFAULTS.packetLoss;
   const downtimePercentage =
-    config?.nodeBehavior?.downtimePercentage || 0;
+    config?.nodeBehavior?.downtimePercentage ||
+    DEFAULTS.downtimePercentage;
 
-  // Update node availability based on downtime
+  // Network stats tracking
+  let messagesSent = 0;
+  let messagesDelivered = 0;
+  let messagesLost = 0;
+
+  // Update node availability based on downtime and partitions
   const updatedNodes = nodes.map((n) => {
-    const isOnline = Math.random() * 100 > downtimePercentage;
+    // In synchronous mode, no random downtime (only partitions can affect nodes)
+    const isDowntime =
+      !isSynchronousMode &&
+      Math.random() * 100 < downtimePercentage;
+    const isPartitioned =
+      partitionActive && partitionedNodes.includes(n.id);
+    const isOnline = !isDowntime && !isPartitioned;
+
     return {
       ...n,
-      state: "Voting",
-      color: !isOnline
+      state: isPartitioned
+        ? "Partitioned"
+        : !isOnline
+        ? "Offline"
+        : "Voting",
+      color: isPartitioned
+        ? n.isByzantine
+          ? "#ff6b6b"
+          : "#f59e0b"
+        : !isOnline
         ? "#666"
         : n.isByzantine
         ? "#ff6b6b"
         : "#f9c74f",
       isOnline,
+      isPartitioned,
     };
   });
 
@@ -72,9 +106,20 @@ export function simulateConsensusStep(
   if (timedOut) {
     handleRoundTimeout();
 
+    // Check if timeout is due to partition
+    const partitionedCount = updatedNodes.filter(
+      (n) => n.isPartitioned
+    ).length;
+    if (partitionedCount > 0) {
+      addLog(
+        `Round ${round} timeout due to network partition (${partitionedCount} nodes affected)`,
+        "warning"
+      );
+    }
+
     // Mark nodes as timed out
     updatedNodes.forEach((n) => {
-      if (n.isOnline) {
+      if (n.isOnline && !n.isPartitioned) {
         n.state = "Timeout";
         n.color = n.isByzantine ? "#ff6b6b" : "#f94144";
       }
@@ -102,17 +147,35 @@ export function simulateConsensusStep(
     updatedNodes
   );
 
-  // Step 2: simulate prevote phase
-  const prevoteResult = voteOnBlock(updatedNodes, block, config);
+  // Step 2: simulate prevote phase with partition logic
+  // Only online, non-partitioned nodes can vote
+  const votableNodes = updatedNodes.filter(
+    (n) => n.isOnline && !n.isPartitioned
+  );
+  messagesSent += updatedNodes.length; // Messages sent to all nodes
+
+  // Simulate message loss due to partition
+  messagesDelivered += votableNodes.length;
+  messagesLost += updatedNodes.length - votableNodes.length;
+
+  const prevoteResult = voteOnBlock(votableNodes, block, config);
   updatePrevotes(
     votingRound,
     prevoteResult.votes,
-    config?.consensus?.voteThreshold || 2 / 3
+    config?.consensus?.voteThreshold || DEFAULTS.voteThreshold
   );
+
+  // Log partition effects
+  if (partitionActive && partitionedNodes.length > 0) {
+    addLog(
+      `${partitionedNodes.length} partitioned nodes unable to vote in prevote`,
+      "warning"
+    );
+  }
 
   // Step 3: simulate precommit phase (only if prevote passed)
   const precommitResult = votingRound.prevoteThresholdMet
-    ? voteOnBlock(updatedNodes, block, config)
+    ? voteOnBlock(votableNodes, block, config)
     : {
         votes: prevoteResult.votes.map((v) => ({
           ...v,
@@ -121,20 +184,34 @@ export function simulateConsensusStep(
         approved: false,
       };
 
+  messagesSent += updatedNodes.length;
+  messagesDelivered += votableNodes.length;
+  messagesLost += updatedNodes.length - votableNodes.length;
+
   updatePrecommits(
     votingRound,
     precommitResult.votes,
-    config?.consensus?.voteThreshold || 2 / 3
+    config?.consensus?.voteThreshold || DEFAULTS.voteThreshold
   );
 
   const { approved, byzantineDetected } = precommitResult;
+
+  // Update network stats
+  if (updateNetworkStats) {
+    updateNetworkStats({
+      sent: messagesSent,
+      delivered: messagesDelivered,
+      lost: messagesLost,
+    });
+  }
 
   let newBlock = null;
   let newLiveness = true;
   let newSafety = true;
 
-  // Simulate packet loss affecting consensus
-  const packetLossOccurred = Math.random() * 100 < packetLoss;
+  // Simulate packet loss affecting consensus (only in asynchronous mode)
+  const packetLossOccurred =
+    !isSynchronousMode && Math.random() * 100 < packetLoss;
 
   if (
     approved &&
@@ -144,7 +221,7 @@ export function simulateConsensusStep(
     newBlock = block;
     finalizeVotingRound(votingRound, true);
     updatedNodes.forEach((n) => {
-      if (n.isOnline) {
+      if (n.isOnline && !n.isPartitioned) {
         n.state = "Committed";
         n.color = n.isByzantine ? "#ff6b6b" : "#90be6d";
       }
@@ -155,9 +232,16 @@ export function simulateConsensusStep(
     const byzantineImpact =
       (config?.nodeBehavior?.byzantineCount || 0) / nodes.length;
     const networkImpact = packetLoss / 100;
+    const partitionImpact =
+      partitionActive && partitionedNodes.length > 0
+        ? partitionedNodes.length / nodes.length
+        : 0;
 
     const livenessFailureRate =
-      baseFailureRate + byzantineImpact + networkImpact;
+      baseFailureRate +
+      byzantineImpact +
+      networkImpact +
+      partitionImpact * 2; // Partition has 2x impact on liveness
     const safetyFailureRate =
       baseFailureRate / 2 + byzantineImpact * 2;
 
@@ -165,10 +249,19 @@ export function simulateConsensusStep(
     newSafety =
       Math.random() > safetyFailureRate || !byzantineDetected;
 
+    // Log partition impact on consensus
+    if (partitionActive && partitionedNodes.length > 0) {
+      addLog(
+        `Consensus failed: ${partitionedNodes.length} nodes partitioned, threshold not met`,
+        "error"
+      );
+    }
+
     finalizeVotingRound(votingRound, false);
     updatedNodes.forEach((n) => {
-      if (n.isOnline) {
-        n.state = "Timeout";
+      if (n.isOnline && !n.isPartitioned) {
+        // In synchronous mode, call it "Failed" instead of "Timeout"
+        n.state = isSynchronousMode ? "Failed" : "Timeout";
         n.color = n.isByzantine ? "#ff6b6b" : "#f94144";
       }
     });
@@ -190,5 +283,47 @@ export function simulateConsensusStep(
     votingRound,
     timedOut: false,
     newProposer: proposerNode,
+  };
+}
+
+/**
+ * Execute a single step in step-by-step mode
+ */
+export function executeStepMode(
+  step,
+  nodes,
+  blocks,
+  config,
+  previousStepState = null,
+  currentRound = null
+) {
+  const stepState = executeConsensusStep(
+    step,
+    nodes,
+    blocks,
+    config,
+    previousStepState,
+    currentRound
+  );
+
+  return {
+    stepState,
+    updatedNodes: stepState.nodes,
+    newBlock: stepState.block,
+    votingRound: stepState.votingRound,
+    highlightedNodes: stepState.highlightedNodes,
+    committed: stepState.committed,
+  };
+}
+
+/**
+ * Get information about a specific step
+ */
+export function getStepInfo(step) {
+  return {
+    step,
+    totalSteps: getTotalSteps(),
+    isLastStep: step >= getTotalSteps() - 1,
+    isFirstStep: step === 0,
   };
 }
