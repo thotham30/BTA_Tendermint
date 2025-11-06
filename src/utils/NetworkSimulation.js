@@ -7,7 +7,11 @@ import {
   updatePrevotes,
   updatePrecommits,
   finalizeVotingRound,
+  executeConsensusStep,
+  CONSENSUS_STEPS,
+  getTotalSteps,
 } from "./tendermintLogic";
+import { DEFAULTS } from "./ConfigManager";
 
 export function initializeNetwork(nodeCount, config) {
   const byzantineCount =
@@ -48,10 +52,12 @@ export function simulateConsensusStep(
   const timedOut = elapsedTime >= timeoutDuration;
 
   // Apply network latency simulation
-  const latency = config?.network?.latency || 100;
-  const packetLoss = config?.network?.packetLoss || 0;
+  const latency = config?.network?.latency || DEFAULTS.latency;
+  const packetLoss =
+    config?.network?.packetLoss || DEFAULTS.packetLoss;
   const downtimePercentage =
-    config?.nodeBehavior?.downtimePercentage || 0;
+    config?.nodeBehavior?.downtimePercentage ||
+    DEFAULTS.downtimePercentage;
 
   // Update node availability based on downtime
   const updatedNodes = nodes.map((n) => {
@@ -107,7 +113,7 @@ export function simulateConsensusStep(
   updatePrevotes(
     votingRound,
     prevoteResult.votes,
-    config?.consensus?.voteThreshold || 2 / 3
+    config?.consensus?.voteThreshold || DEFAULTS.voteThreshold
   );
 
   // Step 3: simulate precommit phase (only if prevote passed)
@@ -124,7 +130,7 @@ export function simulateConsensusStep(
   updatePrecommits(
     votingRound,
     precommitResult.votes,
-    config?.consensus?.voteThreshold || 2 / 3
+    config?.consensus?.voteThreshold || DEFAULTS.voteThreshold
   );
 
   const { approved, byzantineDetected } = precommitResult;
@@ -190,5 +196,45 @@ export function simulateConsensusStep(
     votingRound,
     timedOut: false,
     newProposer: proposerNode,
+  };
+}
+
+/**
+ * Execute a single step in step-by-step mode
+ */
+export function executeStepMode(
+  step,
+  nodes,
+  blocks,
+  config,
+  previousStepState = null
+) {
+  const stepState = executeConsensusStep(
+    step,
+    nodes,
+    blocks,
+    config,
+    previousStepState
+  );
+
+  return {
+    stepState,
+    updatedNodes: stepState.nodes,
+    newBlock: stepState.block,
+    votingRound: stepState.votingRound,
+    highlightedNodes: stepState.highlightedNodes,
+    committed: stepState.committed,
+  };
+}
+
+/**
+ * Get information about a specific step
+ */
+export function getStepInfo(step) {
+  return {
+    step,
+    totalSteps: getTotalSteps(),
+    isLastStep: step >= getTotalSteps() - 1,
+    isFirstStep: step === 0,
   };
 }

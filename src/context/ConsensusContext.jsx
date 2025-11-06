@@ -11,6 +11,7 @@ import {
 import {
   loadConfig,
   DEFAULT_CONFIG,
+  TIMEOUT_LIMITS,
 } from "../utils/ConfigManager";
 
 const ConsensusContext = createContext();
@@ -56,11 +57,21 @@ export const ConsensusProvider = ({ children }) => {
   const [currentRoundVotes, setCurrentRoundVotes] =
     useState(null);
   const [showVotingDetails, setShowVotingDetails] =
-    useState(true);
+    useState(false);
   const [showVotingHistory, setShowVotingHistory] =
     useState(false);
   const [selectedRoundForDetails, setSelectedRoundForDetails] =
     useState(null);
+
+  // Step-by-Step Mode State
+  const [stepMode, setStepMode] = useState(false);
+  const [currentStep, setCurrentStep] = useState(0);
+  const [stepHistory, setStepHistory] = useState([]);
+  const [stepDescription, setStepDescription] =
+    useState("Ready to start");
+  const [autoPlaySteps, setAutoPlaySteps] = useState(false);
+  const [stepState, setStepState] = useState(null); // Current step's detailed state
+  const [highlightedNodes, setHighlightedNodes] = useState([]);
 
   useEffect(() => {
     const initialNodes = initializeNetwork(
@@ -100,6 +111,12 @@ export const ConsensusProvider = ({ children }) => {
     setConsecutiveTimeouts(0);
     setTimeoutHistory([]);
     setCurrentProposer(null);
+    // Reset step mode state
+    setCurrentStep(0);
+    setStepHistory([]);
+    setStepDescription("Ready to start");
+    setStepState(null);
+    setHighlightedNodes([]);
     addLog("Network reset successfully", "info");
   };
 
@@ -177,8 +194,8 @@ export const ConsensusProvider = ({ children }) => {
     if (timeoutEscalationEnabled) {
       const newTimeout = Math.min(
         timeoutDuration * timeoutMultiplier,
-        30000
-      ); // Cap at 30s
+        TIMEOUT_LIMITS.maxTimeout
+      );
       setTimeoutDuration(newTimeout);
       addLog(
         `Round ${round} timeout! Escalating timeout to ${Math.round(
@@ -256,6 +273,101 @@ export const ConsensusProvider = ({ children }) => {
 
   const selectRoundForDetails = (round) => {
     setSelectedRoundForDetails(round);
+  };
+
+  // Step-by-Step Mode Functions
+  const toggleStepMode = () => {
+    const newStepMode = !stepMode;
+    setStepMode(newStepMode);
+
+    if (newStepMode) {
+      // Entering step mode - pause if running
+      if (isRunning) {
+        setIsRunning(false);
+      }
+      setCurrentStep(0);
+      setStepDescription(
+        "Round Start - Ready to begin consensus"
+      );
+      addLog("Switched to Step-by-Step Mode", "info");
+    } else {
+      // Exiting step mode
+      setCurrentStep(0);
+      setStepHistory([]);
+      setStepState(null);
+      setHighlightedNodes([]);
+      addLog("Switched to Continuous Mode", "info");
+    }
+  };
+
+  const nextStep = () => {
+    if (!stepMode) return;
+
+    // Save current state to history
+    const historyEntry = {
+      step: currentStep,
+      nodes: [...nodes],
+      blocks: [...blocks],
+      round,
+      description: stepDescription,
+      stepState,
+      timestamp: Date.now(),
+    };
+    setStepHistory((prev) => [...prev, historyEntry]);
+
+    // Move to next step
+    setCurrentStep((prev) => prev + 1);
+  };
+
+  const previousStep = () => {
+    if (!stepMode || stepHistory.length === 0) return;
+
+    // Pop the last state from history
+    const lastState = stepHistory[stepHistory.length - 1];
+    setNodes(lastState.nodes);
+    setBlocks(lastState.blocks);
+    setRound(lastState.round);
+    setCurrentStep(lastState.step);
+    setStepDescription(lastState.description);
+    setStepState(lastState.stepState);
+
+    // Remove from history
+    setStepHistory((prev) => prev.slice(0, -1));
+    addLog(`Reverted to step ${lastState.step}`, "info");
+  };
+
+  const goToRoundStart = () => {
+    if (!stepMode) return;
+
+    setCurrentStep(0);
+    setStepDescription("Round Start - Ready to begin consensus");
+    setStepState(null);
+    setHighlightedNodes([]);
+    addLog("Returned to round start", "info");
+  };
+
+  const toggleAutoPlaySteps = () => {
+    setAutoPlaySteps((prev) => !prev);
+  };
+
+  const updateStepState = (state) => {
+    setStepState(state);
+  };
+
+  const updateStepDescription = (description) => {
+    setStepDescription(description);
+  };
+
+  const updateHighlightedNodes = (nodeIds) => {
+    setHighlightedNodes(nodeIds);
+  };
+
+  const updateNodes = (newNodes) => {
+    setNodes(newNodes);
+  };
+
+  const addBlock = (newBlock) => {
+    setBlocks((prev) => [...prev, newBlock]);
   };
 
   useEffect(() => {
@@ -402,6 +514,14 @@ export const ConsensusProvider = ({ children }) => {
         timeoutEscalationEnabled,
         timeoutHistory,
         currentProposer,
+        // Step-by-Step Mode state
+        stepMode,
+        currentStep,
+        stepHistory,
+        stepDescription,
+        autoPlaySteps,
+        stepState,
+        highlightedNodes,
         startConsensus,
         stopConsensus,
         resetNetwork,
@@ -418,6 +538,17 @@ export const ConsensusProvider = ({ children }) => {
         updateTimeoutSettings,
         handleRoundTimeout,
         handleSuccessfulCommit,
+        // Step-by-Step Mode functions
+        toggleStepMode,
+        nextStep,
+        previousStep,
+        goToRoundStart,
+        toggleAutoPlaySteps,
+        updateStepState,
+        updateStepDescription,
+        updateHighlightedNodes,
+        updateNodes,
+        addBlock,
       }}
     >
       {children}

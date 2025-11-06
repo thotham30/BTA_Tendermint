@@ -21,30 +21,52 @@ export default function ConsensusVisualizer() {
     showVotingHistory,
     currentRoundVotes,
     isRunning,
+    stepMode,
+    highlightedNodes,
+    stepState,
   } = useConsensus();
 
   return (
     <div className="visualizer-container">
       <h2>Consensus Round: {round}</h2>
 
+      {/* Step-by-Step Phase Indicator */}
+      {stepMode && stepState && (
+        <div
+          className={`phase-indicator phase-${stepState.phase}`}
+        >
+          <span className="phase-label">
+            {stepState.phase.toUpperCase()}
+          </span>
+        </div>
+      )}
+
       {/* Timeout Visualizer Section */}
-      {isRunning && (
+      {isRunning && !stepMode && (
         <div className="timeout-section">
           <TimeoutVisualizer />
         </div>
       )}
 
       <div className="nodes-container">
-        {nodes.map((node) => (
-          <motion.div
-            key={node.id}
-            initial={{ scale: 0 }}
-            animate={{ scale: 1 }}
-            transition={{ duration: 0.3 }}
-          >
-            <Node node={node} />
-          </motion.div>
-        ))}
+        {nodes.map((node) => {
+          const isHighlighted =
+            stepMode && highlightedNodes.includes(node.id);
+          return (
+            <motion.div
+              key={node.id}
+              initial={{ scale: 0 }}
+              animate={{
+                scale: isHighlighted ? 1.2 : 1,
+                borderWidth: isHighlighted ? 3 : 0,
+              }}
+              transition={{ duration: 0.3 }}
+              className={isHighlighted ? "highlighted-node" : ""}
+            >
+              <Node node={node} isHighlighted={isHighlighted} />
+            </motion.div>
+          );
+        })}
       </div>
 
       {/* Voting Visualization Section */}

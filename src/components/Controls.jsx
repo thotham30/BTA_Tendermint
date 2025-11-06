@@ -3,6 +3,7 @@ import { useConsensus } from "../context/ConsensusContext";
 import {
   PRESET_CONFIGS,
   saveConfig,
+  SPEED_OPTIONS,
 } from "../utils/ConfigManager";
 import ConfigurationPanel from "./ConfigurationPanel";
 
@@ -11,6 +12,7 @@ export default function Controls() {
     isRunning,
     speed,
     config,
+    stepMode,
     startConsensus,
     stopConsensus,
     resetNetwork,
@@ -18,6 +20,7 @@ export default function Controls() {
     loadNewConfig,
     toggleVotingDetails,
     toggleVotingHistory,
+    toggleStepMode,
     showVotingDetails,
     baseTimeoutDuration,
     timeoutMultiplier,
@@ -46,14 +49,6 @@ export default function Controls() {
     timeoutMultiplier,
     timeoutEscalationEnabled,
   ]);
-
-  const speedOptions = [
-    { label: "0.25x", value: 0.25 },
-    { label: "0.5x", value: 0.5 },
-    { label: "1x", value: 1 },
-    { label: "2x", value: 2 },
-    { label: "4x", value: 4 },
-  ];
 
   const handlePreset = (presetName) => {
     const preset = PRESET_CONFIGS[presetName];
@@ -111,18 +106,46 @@ export default function Controls() {
   return (
     <>
       <div className="controls">
-        <div className="control-buttons">
-          {!isRunning ? (
+        {/* Mode Selection */}
+        <div className="mode-selection">
+          <label>Simulation Mode:</label>
+          <div className="mode-buttons">
             <button
-              onClick={startConsensus}
-              className="start-btn"
+              onClick={() => !stepMode || toggleStepMode()}
+              className={`mode-btn ${!stepMode ? "active" : ""}`}
+              disabled={!stepMode}
             >
-              Start
+              🔄 Continuous
             </button>
-          ) : (
-            <button onClick={stopConsensus} className="stop-btn">
-              Pause
+            <button
+              onClick={() => stepMode || toggleStepMode()}
+              className={`mode-btn ${stepMode ? "active" : ""}`}
+              disabled={stepMode}
+            >
+              👣 Step-by-Step
             </button>
+          </div>
+        </div>
+
+        <div className="control-buttons">
+          {!stepMode && (
+            <>
+              {!isRunning ? (
+                <button
+                  onClick={startConsensus}
+                  className="start-btn"
+                >
+                  Start
+                </button>
+              ) : (
+                <button
+                  onClick={stopConsensus}
+                  className="stop-btn"
+                >
+                  Pause
+                </button>
+              )}
+            </>
           )}
           <button onClick={resetNetwork} className="reset-btn">
             Reset
@@ -256,20 +279,23 @@ export default function Controls() {
           </div>
         </div>
 
-        <div className="speed-controls">
-          <label>Speed:</label>
-          {speedOptions.map((option) => (
-            <button
-              key={option.value}
-              onClick={() => changeSpeed(option.value)}
-              className={`speed-btn ${
-                speed === option.value ? "active" : ""
-              }`}
-            >
-              {option.label}
-            </button>
-          ))}
-        </div>
+        {/* Speed controls - only show in continuous mode */}
+        {!stepMode && (
+          <div className="speed-controls">
+            <label>Speed:</label>
+            {SPEED_OPTIONS.map((option) => (
+              <button
+                key={option.value}
+                onClick={() => changeSpeed(option.value)}
+                className={`speed-btn ${
+                  speed === option.value ? "active" : ""
+                }`}
+              >
+                {option.label}
+              </button>
+            ))}
+          </div>
+        )}
       </div>
 
       <ConfigurationPanel

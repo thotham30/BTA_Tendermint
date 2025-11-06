@@ -2,6 +2,62 @@
 
 const CONFIG_STORAGE_KEY = "tendermint_config";
 
+// ============================================
+// UI Configuration Constants
+// ============================================
+
+/**
+ * Speed options for continuous mode simulation
+ */
+export const SPEED_OPTIONS = [
+  { label: "0.25x", value: 0.25 },
+  { label: "0.5x", value: 0.5 },
+  { label: "1x", value: 1 },
+  { label: "2x", value: 2 },
+  { label: "4x", value: 4 },
+];
+
+/**
+ * Step-by-Step Mode Configuration
+ */
+export const STEP_MODE_CONFIG = {
+  autoPlayDelay: 2000, // milliseconds between auto-play steps
+  historyLimit: 50, // maximum number of steps to keep in history
+};
+
+/**
+ * Timeout Configuration Limits
+ */
+export const TIMEOUT_LIMITS = {
+  maxTimeout: 30000, // Maximum timeout duration (30 seconds)
+  minTimeout: 1000, // Minimum timeout duration (1 second)
+  defaultEscalationMultiplier: 1.5,
+};
+
+/**
+ * Animation and Visual Configuration
+ */
+export const VISUAL_CONFIG = {
+  nodeHighlightDuration: 1000, // milliseconds
+  phaseTransitionDuration: 300, // milliseconds
+  pulseAnimationDuration: 2000, // milliseconds
+  progressUpdateInterval: 100, // milliseconds for progress bars
+};
+
+/**
+ * Default Values and Fallbacks
+ */
+export const DEFAULTS = {
+  voteThreshold: 2 / 3,
+  latency: 100,
+  packetLoss: 0,
+  downtimePercentage: 0,
+  responseVariance: 50,
+  roundTimeout: 5000,
+  blockSize: 10,
+  proposalDelay: 100,
+};
+
 // Default configuration
 export const DEFAULT_CONFIG = {
   name: "Default",
@@ -457,4 +513,90 @@ export function estimateConsensusTime(config) {
   baseTime *= 1 + failureProbability;
 
   return Math.round(baseTime);
+}
+
+/**
+ * Get default value with fallback
+ */
+export function getConfigValue(config, path, fallback) {
+  const keys = path.split(".");
+  let value = config;
+
+  for (const key of keys) {
+    if (value && typeof value === "object" && key in value) {
+      value = value[key];
+    } else {
+      return fallback;
+    }
+  }
+
+  return value !== undefined ? value : fallback;
+}
+
+/**
+ * Format vote threshold for display
+ */
+export function formatVoteThreshold(threshold) {
+  const numThreshold = parseFloat(threshold);
+
+  if (
+    numThreshold === 0.67 ||
+    Math.abs(numThreshold - 2 / 3) < 0.01
+  ) {
+    return "2/3+";
+  } else if (numThreshold === 0.5) {
+    return "1/2+";
+  } else if (numThreshold === 0.75) {
+    return "3/4+";
+  } else {
+    return `${(numThreshold * 100).toFixed(0)}%`;
+  }
+}
+
+/**
+ * Calculate maximum allowed Byzantine nodes
+ */
+export function getMaxByzantineNodes(nodeCount) {
+  return Math.floor(nodeCount / 3);
+}
+
+/**
+ * Check if configuration allows consensus
+ */
+export function canReachConsensus(config) {
+  const { network, nodeBehavior } = config;
+  const onlineNodes =
+    network.nodeCount *
+    (1 - nodeBehavior.downtimePercentage / 100);
+  const maxByzantine = getMaxByzantineNodes(network.nodeCount);
+
+  // Need at least 2/3 of nodes online and working
+  const requiredNodes = Math.ceil(
+    network.nodeCount *
+      parseFloat(config.consensus.voteThreshold)
+  );
+  const effectiveNodes =
+    onlineNodes - nodeBehavior.byzantineCount;
+
+  return (
+    effectiveNodes >= requiredNodes &&
+    nodeBehavior.byzantineCount <= maxByzantine
+  );
+}
+
+/**
+ * Get configuration summary for display
+ */
+export function getConfigSummary(config) {
+  return {
+    nodes: config.network.nodeCount,
+    latency: `${config.network.latency}ms`,
+    threshold: formatVoteThreshold(
+      config.consensus.voteThreshold
+    ),
+    byzantine: config.nodeBehavior.byzantineCount,
+    packetLoss: `${config.network.packetLoss}%`,
+    downtime: `${config.nodeBehavior.downtimePercentage}%`,
+    canConsensus: canReachConsensus(config),
+  };
 }

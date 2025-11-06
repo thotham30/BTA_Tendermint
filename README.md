@@ -67,10 +67,46 @@ This project provides a comprehensive educational and testing platform for the T
 
 - **Start/Stop/Reset**: Full simulation control
 - **Speed Control**: Adjustable simulation speed (0.5x to 5x)
+- **Simulation Mode**: Toggle between Continuous and Step-by-Step modes
 - **Configuration Panel**: Live parameter adjustment
 - **Interactive UI**: Responsive controls with immediate feedback
 
-#### 9. **Logging System**
+#### 9. **Step-by-Step Mode** 🆕
+
+- **Educational Mode**: Advance through consensus one step at a time
+- **8 Defined Steps**:
+  - Step 0: Round Start - Initialize round and select proposer
+  - Step 1: Block Proposal - Proposer creates and broadcasts block
+  - Step 2: Prevote - Validators vote on the proposed block
+  - Step 3: Prevote Tally - Count prevotes and check if > 2/3
+  - Step 4: Precommit - Validators commit to the block
+  - Step 5: Precommit Tally - Count precommits and check if > 2/3
+  - Step 6: Commit - Block is finalized and added to chain
+  - Step 7: Round Complete - Reset for next round
+- **Step Navigation**:
+  - Next/Previous buttons for manual control
+  - Go to Round Start button
+  - Auto-play mode with configurable delay
+  - Step history for undo functionality
+- **State Inspector**: Real-time view of consensus state at each step
+  - Current proposer and block details
+  - Vote counts and threshold status
+  - Network statistics
+  - Phase-specific information
+- **Detailed Step View**: Comprehensive breakdown of each step
+  - Tabular vote display with node-by-node breakdown
+  - Vote thresholds with visual progress bars
+  - Node state cards showing current status
+  - Byzantine node identification
+- **Visual Highlighting**: Nodes involved in current step are highlighted
+- **Phase Color-Coding**:
+  - Initialization: Purple
+  - Proposal: Yellow
+  - Voting: Blue
+  - Commit: Green
+  - Complete: Gray
+
+#### 10. **Logging System**
 
 - **Comprehensive Logs**: Detailed event logging with timestamps
 - **Log Categories**: Info, warning, error, success, and block events
@@ -104,7 +140,10 @@ BTA Project/
 │   │   ├── VotingDetails.jsx         # Detailed vote analysis
 │   │   ├── VotingHistory.jsx         # Historical voting records
 │   │   ├── VotingStatistics.jsx      # Voting metrics dashboard
-│   │   └── VotingVisualization.jsx   # Visual voting representation
+│   │   ├── VotingVisualization.jsx   # Visual voting representation
+│   │   ├── StepByStepControls.jsx    # Step-by-step mode controls 🆕
+│   │   ├── StateInspector.jsx        # Step state inspection panel 🆕
+│   │   └── DetailedStepView.jsx      # Detailed step breakdown 🆕
 │   │
 │   ├── context/
 │   │   └── ConsensusContext.jsx      # Global state management via React Context
@@ -117,12 +156,14 @@ BTA Project/
 │   │   │                             # - Block creation
 │   │   │                             # - Voting logic (prevote/precommit)
 │   │   │                             # - VotingRound data structures
+│   │   │                             # - Step definitions and execution 🆕
 │   │   │
 │   │   ├── NetworkSimulation.js      # Network layer simulation
 │   │   │                             # - Node initialization
 │   │   │                             # - Consensus step execution
 │   │   │                             # - Timeout handling
 │   │   │                             # - Network condition simulation
+│   │   │                             # - Step-by-step mode execution 🆕
 │   │   │
 │   │   └── ConfigManager.js          # Configuration utilities
 │   │                                 # - Default/preset configs
@@ -270,29 +311,38 @@ npm run preview
 
 ## Use Cases
 
-1. **Education**: Learn Tendermint consensus mechanics visually
+1. **Education**: Learn Tendermint consensus mechanics visually with step-by-step mode for detailed instruction
 2. **Research**: Test Byzantine fault tolerance under various conditions
 3. **Network Analysis**: Study consensus performance with different parameters
 4. **Debugging**: Understand timeout mechanisms and vote propagation
-5. **Demonstration**: Present BFT consensus concepts to audiences
+5. **Demonstration**: Present BFT consensus concepts to audiences with interactive step-by-step progression
+6. **Interactive Learning**: Use step-by-step mode to understand each phase of consensus in detail
 
 ## For LLM Context
 
 This project simulates the Tendermint BFT consensus protocol with a React-based frontend. The core logic resides in `src/utils/` (consensus algorithm, network simulation, configuration). The UI components in `src/components/` provide visualization and controls. State is managed centrally via `ConsensusContext.jsx`. The system models Byzantine nodes, network failures, voting phases, timeout mechanisms, and tracks liveness/safety properties in real-time. Configuration is highly flexible with validation, presets, and import/export capabilities.
 
+**New Step-by-Step Mode**: The visualizer now supports an educational step-by-step mode where users can advance through consensus one action at a time. This mode breaks down each consensus round into 8 distinct steps (Round Start, Block Proposal, Prevote, Prevote Tally, Precommit, Precommit Tally, Commit, Round Complete). Each step provides detailed state inspection showing the proposer, block details, vote counts, threshold status, and node states. The mode includes visual highlighting of active nodes, phase color-coding, tabular vote breakdowns, and navigation controls (next/previous, go to start, auto-play). This feature is ideal for educational purposes, debugging, and understanding the consensus process in detail.
+
 ## Key Implementation Details
 
 ### File Responsibilities
 
-- **`ConsensusContext.jsx`**: Central state hub managing all application state including nodes, blocks, voting rounds, timeouts, and configuration. Provides hooks for all components to access and modify state.
+- **`ConsensusContext.jsx`**: Central state hub managing all application state including nodes, blocks, voting rounds, timeouts, step-by-step mode state, and configuration. Provides hooks for all components to access and modify state.
 
-- **`tendermintLogic.js`**: Pure consensus logic implementing proposer selection, block creation, voting mechanics, and voting round data structure management. No side effects.
+- **`tendermintLogic.js`**: Pure consensus logic implementing proposer selection, block creation, voting mechanics, voting round data structure management, and step-by-step execution. Defines 8 consensus steps with descriptions and phase information. No side effects.
 
-- **`NetworkSimulation.js`**: Orchestrates consensus steps by calling tendermintLogic functions and applying network conditions (latency, packet loss, downtime). Handles timeout detection and state transitions.
+- **`NetworkSimulation.js`**: Orchestrates consensus steps by calling tendermintLogic functions and applying network conditions (latency, packet loss, downtime). Handles timeout detection, state transitions, and step-by-step mode execution.
 
 - **`ConfigManager.js`**: Configuration management including validation, presets, import/export, and analytical functions (success rate estimation, consensus time estimation).
 
-- **`ConsensusVisualizer.jsx`**: Main visualization component rendering nodes, blocks, and their connections. Integrates TimeoutVisualizer and VotingVisualization.
+- **`ConsensusVisualizer.jsx`**: Main visualization component rendering nodes, blocks, and their connections. Integrates TimeoutVisualizer, VotingVisualization, and supports node highlighting in step-by-step mode.
+
+- **`StepByStepControls.jsx`**: Controls for step-by-step mode including next/previous buttons, auto-play toggle, and progress display. Executes steps and updates state accordingly.
+
+- **`StateInspector.jsx`**: Displays current step information including proposer, block details, vote counts, thresholds, network status, and commit status. Shows phase-specific data with color-coded badges.
+
+- **`DetailedStepView.jsx`**: Provides detailed tabular breakdown of votes, node states, and consensus progress. Shows vote-by-vote analysis with Byzantine node identification.
 
 - **Voting Components**: Multiple specialized components (VotingBreakdown, VotingDetails, VotingHistory, VotingStatistics, VotingVisualization) provide comprehensive voting analysis from different perspectives.
 

@@ -2,7 +2,7 @@ import React from "react";
 import { motion } from "framer-motion";
 import { useConsensus } from "../context/ConsensusContext";
 
-export default function Node({ node }) {
+export default function Node({ node, isHighlighted = false }) {
   const { id, state, color } = node;
   const { currentRoundVotes, currentProposer } = useConsensus();
 
@@ -62,8 +62,15 @@ export default function Node({ node }) {
 
   return (
     <motion.div
-      className={`node ${isProposer ? "node-proposer" : ""}`}
-      style={{ backgroundColor: color }}
+      className={`node ${isProposer ? "node-proposer" : ""} ${
+        isHighlighted ? "node-highlighted" : ""
+      }`}
+      style={{
+        backgroundColor: color,
+        boxShadow: isHighlighted
+          ? "0 0 20px rgba(255, 215, 0, 0.8)"
+          : "none",
+      }}
       whileHover={{ scale: 1.1 }}
     >
       <div className="node-id">Node {id}</div>
@@ -84,6 +91,13 @@ export default function Node({ node }) {
         >
           👑
         </div>
+      )}
+      {isHighlighted && (
+        <motion.div
+          className="highlight-ring"
+          animate={{ scale: [1, 1.2, 1] }}
+          transition={{ duration: 1, repeat: Infinity }}
+        />
       )}
     </motion.div>
   );
