@@ -274,13 +274,15 @@ export function validateConfig(config) {
   }
 
   // Node behavior validation
-  const maxByzantine = Math.floor(network.nodeCount / 3);
+  // Allow Byzantine nodes to exceed n/3 for testing protocol failure scenarios
   if (
     nodeBehavior.byzantineCount < 0 ||
-    nodeBehavior.byzantineCount > maxByzantine
+    nodeBehavior.byzantineCount >= network.nodeCount
   ) {
     errors.push(
-      `Byzantine nodes must be between 0 and ${maxByzantine} (less than n/3)`
+      `Byzantine nodes must be between 0 and ${
+        network.nodeCount - 1
+      }`
     );
   }
   if (
@@ -433,14 +435,18 @@ export function getConfigWarnings(config) {
   const warnings = [];
   const { network, nodeBehavior } = config;
 
-  // Check if byzantine nodes are at the limit
+  // Check if byzantine nodes exceed safety threshold (n/3)
   const maxByzantine = Math.floor(network.nodeCount / 3);
-  if (
+  if (nodeBehavior.byzantineCount > maxByzantine) {
+    warnings.push(
+      `⚠️ CRITICAL: Byzantine nodes (${nodeBehavior.byzantineCount}) exceed safety threshold (${maxByzantine}). Protocol WILL fail!`
+    );
+  } else if (
     nodeBehavior.byzantineCount === maxByzantine &&
     maxByzantine > 0
   ) {
     warnings.push(
-      "Byzantine nodes at maximum (n/3). Consensus may fail frequently."
+      "Byzantine nodes at maximum safe threshold (n/3). Consensus may fail frequently."
     );
   }
 

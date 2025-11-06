@@ -137,7 +137,25 @@ export function simulateConsensusStep(
   }
 
   // Step 1: proposer creates block
-  const block = createBlock(proposerNode.id, round + 1, config);
+  const block = createBlock(
+    proposerNode.id,
+    round + 1,
+    config,
+    proposerNode
+  );
+
+  // Log if Byzantine proposer creates malicious block
+  if (proposerNode.isByzantine && block.isMalicious) {
+    addLog(
+      `⚠️ Byzantine Node ${proposerNode.id} (${proposerNode.byzantineType}) proposed malicious block!`,
+      "warning"
+    );
+  } else if (proposerNode.isByzantine) {
+    addLog(
+      `Byzantine Node ${proposerNode.id} is proposer (block appears valid)`,
+      "info"
+    );
+  }
 
   // Create voting round to track votes
   const votingRound = createVotingRound(
@@ -164,6 +182,14 @@ export function simulateConsensusStep(
     prevoteResult.votes,
     config?.consensus?.voteThreshold || DEFAULTS.voteThreshold
   );
+
+  // Log malicious block rejection
+  if (block.isMalicious && !votingRound.prevoteThresholdMet) {
+    addLog(
+      `✓ Malicious block from Byzantine proposer rejected by honest nodes in prevote`,
+      "success"
+    );
+  }
 
   // Log partition effects
   if (partitionActive && partitionedNodes.length > 0) {
@@ -213,6 +239,13 @@ export function simulateConsensusStep(
   const packetLossOccurred =
     !isSynchronousMode && Math.random() * 100 < packetLoss;
 
+  // Check if Byzantine nodes exceed safety threshold
+  const maxByzantine = Math.floor(nodes.length / 3);
+  const byzantineCount =
+    config?.nodeBehavior?.byzantineCount || 0;
+  const byzantineExceedsThreshold =
+    byzantineCount > maxByzantine;
+
   if (
     approved &&
     votingRound.precommitThresholdMet &&
@@ -226,33 +259,49 @@ export function simulateConsensusStep(
         n.color = n.isByzantine ? "#ff6b6b" : "#90be6d";
       }
     });
+
+    // Liveness is maintained when blocks are committed
+    newLiveness = true;
+
+    // Safety is violated if Byzantine nodes exceed n/3, even if a block was committed
+    // This is because the BFT assumption is broken and forks could occur
+    if (byzantineExceedsThreshold) {
+      newSafety = false;
+      addLog(
+        `⚠️ Safety violation risk: Byzantine nodes (${byzantineCount}) exceed safe threshold (${maxByzantine})`,
+        "error"
+      );
+    } else {
+      newSafety = true;
+    }
   } else {
-    // simulate potential liveness failure or fork
-    const baseFailureRate = 0.1;
-    const byzantineImpact =
-      (config?.nodeBehavior?.byzantineCount || 0) / nodes.length;
-    const networkImpact = packetLoss / 100;
-    const partitionImpact =
-      partitionActive && partitionedNodes.length > 0
-        ? partitionedNodes.length / nodes.length
-        : 0;
+    // Consensus failed - no block committed
+    // Liveness is violated when consensus cannot progress
+    newLiveness = false;
 
-    const livenessFailureRate =
-      baseFailureRate +
-      byzantineImpact +
-      networkImpact +
-      partitionImpact * 2; // Partition has 2x impact on liveness
-    const safetyFailureRate =
-      baseFailureRate / 2 + byzantineImpact * 2;
-
-    newLiveness = Math.random() > livenessFailureRate;
-    newSafety =
-      Math.random() > safetyFailureRate || !byzantineDetected;
+    // Safety violations occur when Byzantine nodes exceed n/3
+    // Even without a commit, exceeding n/3 means safety guarantees are lost
+    if (byzantineExceedsThreshold) {
+      newSafety = false;
+      addLog(
+        `⚠️ Safety violated: Byzantine nodes (${byzantineCount}) exceed threshold (${maxByzantine})`,
+        "error"
+      );
+    } else {
+      // Safety can still be maintained even if liveness fails
+      // (no conflicting blocks committed, just no progress)
+      newSafety = true;
+    }
 
     // Log partition impact on consensus
     if (partitionActive && partitionedNodes.length > 0) {
       addLog(
         `Consensus failed: ${partitionedNodes.length} nodes partitioned, threshold not met`,
+        "error"
+      );
+    } else if (byzantineExceedsThreshold) {
+      addLog(
+        `Consensus failed: Too many Byzantine nodes (${byzantineCount}/${nodes.length})`,
         "error"
       );
     }

@@ -180,7 +180,12 @@ export default function DetailedStepView() {
                   Node {node.id}
                 </span>
                 {node.isByzantine && (
-                  <span className="byzantine-indicator">⚠️</span>
+                  <span
+                    style={{ position: "static" }}
+                    className="byzantine-indicator"
+                  >
+                    ⚠️
+                  </span>
                 )}
               </div>
               <div className="node-state-info">

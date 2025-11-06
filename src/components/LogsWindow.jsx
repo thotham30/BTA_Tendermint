@@ -13,10 +13,15 @@ export default function LogsWindow() {
     networkStats,
   } = useConsensus();
   const logsEndRef = useRef(null);
+  const logsContainerRef = useRef(null);
 
   // Auto-scroll to the bottom when new logs are added
+  // Only scroll within the logs container, not the entire page
   useEffect(() => {
-    logsEndRef.current?.scrollIntoView({ behavior: "smooth" });
+    if (logsContainerRef.current) {
+      logsContainerRef.current.scrollTop =
+        logsContainerRef.current.scrollHeight;
+    }
   }, [logs]);
 
   // Calculate timeout statistics
@@ -115,7 +120,7 @@ export default function LogsWindow() {
         </div>
       )}
 
-      <div className="logs-container">
+      <div className="logs-container" ref={logsContainerRef}>
         {logs.length === 0 ? (
           <p className="logs-empty">
             No logs yet. Start the simulation!

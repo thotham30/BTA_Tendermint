@@ -64,28 +64,44 @@ export const STEP_PHASES = {
  */
 
 export function getNextProposer(nodes, round) {
-  // Get only online, non-byzantine nodes for proposer selection
-  const eligibleNodes = nodes.filter(
-    (n) => n.isOnline && !n.isByzantine
-  );
-  if (eligibleNodes.length === 0) {
-    // Fallback to all nodes if no eligible ones
+  // In a real BFT system, Byzantine nodes can become proposers
+  // The protocol must handle malicious proposals through voting
+  const onlineNodes = nodes.filter((n) => n.isOnline);
+
+  if (onlineNodes.length === 0) {
+    // Fallback to all nodes if no online ones
     return nodes[round % nodes.length];
   }
-  return eligibleNodes[round % eligibleNodes.length];
+
+  // Round-robin selection among all online nodes (including Byzantine)
+  return onlineNodes[round % onlineNodes.length];
 }
 
-export function createBlock(proposerId, height, config) {
+export function createBlock(
+  proposerId,
+  height,
+  config,
+  proposerNode = null
+) {
   const blockSize =
     config?.consensus?.blockSize || DEFAULTS.blockSize;
   const txCount = Math.floor(Math.random() * blockSize) + 1;
 
+  // Byzantine proposers might create malicious blocks
+  let isMalicious = false;
+  if (proposerNode && proposerNode.isByzantine) {
+    // Byzantine proposers have a chance to propose malicious blocks
+    isMalicious = Math.random() > 0.3; // 70% chance of malicious proposal
+  }
+
   return {
     height,
     proposer: proposerId,
-    txCount,
+    txCount: isMalicious ? Math.floor(txCount * 1.5) : txCount, // Malicious: propose larger blocks
     hash: Math.random().toString(36).substring(2, 10),
     timestamp: Date.now(),
+    isMalicious, // Flag to indicate if this is a malicious proposal
+    byzantineType: proposerNode?.byzantineType || null,
   };
 }
 
@@ -138,29 +154,39 @@ export function voteOnBlock(nodes, block, config) {
       }
     }
 
-    // Honest node - always votes "yes" (100% honest)
-    // For educational purposes, honest nodes are perfectly reliable
-    // Network issues (downtime, partitions) are handled separately
+    // Honest node voting logic
+    // Honest nodes validate the block and reject malicious proposals
+    if (block.isMalicious) {
+      // Honest nodes detect and reject malicious blocks
+      // In a real system, this would be validation of transactions, state, etc.
+      return {
+        nodeId: node.id,
+        vote: false, // Reject malicious block
+        isByzantine: false,
+        reason: "Malicious block detected",
+      };
+    }
+
+    // For valid blocks, honest nodes vote yes
     return {
       nodeId: node.id,
-      vote: true, // Always approve
+      vote: true, // Approve valid block
       isByzantine: false,
     };
   });
 
   // Count valid yes votes (excluding null votes)
-  const validVotes = votes.filter((v) => v.vote !== null);
-  const yesVotes = validVotes.filter((v) => v.vote).length;
-  const totalVotes = validVotes.length;
+  const yesVotes = votes.filter((v) => v.vote === true).length;
+  const totalNodes = votes.length;
 
-  // Check if threshold is met
+  // Check if threshold is met - must be based on total nodes, not just valid votes
   const approved =
-    totalVotes > 0 && yesVotes / totalVotes >= voteThreshold;
+    totalNodes > 0 && yesVotes / totalNodes >= voteThreshold;
 
   return {
     votes,
     yesVotes,
-    totalVotes,
+    totalVotes: totalNodes,
     approved,
     byzantineDetected,
   };
@@ -211,17 +237,14 @@ export function updatePrevotes(
     votingRound.prevotesReceived[nodeId] = vote;
   });
 
-  const validPrevotes = Object.values(
-    votingRound.prevotesReceived
-  ).filter((v) => v !== null);
-  const yesPrevotes = validPrevotes.filter(
-    (v) => v === true
-  ).length;
+  const allVotes = Object.values(votingRound.prevotesReceived);
+  const yesPrevotes = allVotes.filter((v) => v === true).length;
+  const totalNodes = allVotes.length;
 
   votingRound.prevoteCount = yesPrevotes;
+  // Threshold must be calculated against total nodes, not just valid votes
   votingRound.prevoteThresholdMet =
-    validPrevotes.length > 0 &&
-    yesPrevotes / validPrevotes.length >= voteThreshold;
+    totalNodes > 0 && yesPrevotes / totalNodes >= voteThreshold;
 
   return votingRound;
 }
@@ -238,17 +261,17 @@ export function updatePrecommits(
     votingRound.precommitsReceived[nodeId] = vote;
   });
 
-  const validPrecommits = Object.values(
-    votingRound.precommitsReceived
-  ).filter((v) => v !== null);
-  const yesPrecommits = validPrecommits.filter(
+  const allVotes = Object.values(votingRound.precommitsReceived);
+  const yesPrecommits = allVotes.filter(
     (v) => v === true
   ).length;
+  const totalNodes = allVotes.length;
 
   votingRound.precommitCount = yesPrecommits;
+  // Threshold must be calculated against total nodes, not just valid votes
   votingRound.precommitThresholdMet =
-    validPrecommits.length > 0 &&
-    yesPrecommits / validPrecommits.length >= voteThreshold;
+    totalNodes > 0 &&
+    yesPrecommits / totalNodes >= voteThreshold;
 
   return votingRound;
 }
@@ -304,7 +327,12 @@ export function executeConsensusStep(
       const proposer =
         previousStepState?.proposer ||
         getNextProposer(nodes, round);
-      const block = createBlock(proposer.id, round + 1, config);
+      const block = createBlock(
+        proposer.id,
+        round + 1,
+        config,
+        proposer
+      );
       const votingRound = createVotingRound(
         round + 1,
         round + 1,

@@ -44,10 +44,28 @@ function AppContent() {
             </span>
           </div>
           {config.nodeBehavior.byzantineCount > 0 && (
-            <div className="summary-item warning">
+            <div
+              className={`summary-item ${
+                config.nodeBehavior.byzantineCount >
+                Math.floor(config.network.nodeCount / 3)
+                  ? "critical"
+                  : "warning"
+              }`}
+            >
               <span className="summary-label">Byzantine:</span>
               <span className="summary-value">
                 {config.nodeBehavior.byzantineCount}
+                {config.nodeBehavior.byzantineCount >
+                  Math.floor(config.network.nodeCount / 3) && (
+                  <span
+                    style={{
+                      marginLeft: "4px",
+                      fontSize: "0.9em",
+                    }}
+                  >
+                    ⚠️
+                  </span>
+                )}
               </span>
             </div>
           )}
@@ -62,10 +80,10 @@ function AppContent() {
         </div>
       </header>
 
-      <div className="indicators">
+      {/* <div className="indicators">
         <LivenessIndicator />
         <SafetyIndicator />
-      </div>
+      </div> */}
 
       {/* Step-by-Step Controls */}
       {stepMode && <StepByStepControls />}
@@ -84,18 +102,14 @@ function AppContent() {
           <div className="right-panel-step-mode">
             <StateInspector />
             <DetailedStepView />
+            <div className="step-mode-logs">
+              <LogsWindow />
+            </div>
           </div>
         ) : (
           <LogsWindow />
         )}
       </div>
-
-      {/* Logs in step mode - at the bottom */}
-      {stepMode && (
-        <div className="step-mode-logs">
-          <LogsWindow />
-        </div>
-      )}
     </div>
   );
 }

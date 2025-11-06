@@ -281,7 +281,21 @@ export const ConsensusProvider = ({ children }) => {
   };
 
   const finalizeRound = (votingRound) => {
-    setVotingHistory((prev) => [...prev, votingRound]);
+    // Check if this voting round already exists in history to prevent duplicates
+    setVotingHistory((prev) => {
+      const roundExists = prev.some(
+        (vr) =>
+          vr.roundNumber === votingRound.roundNumber &&
+          vr.roundHeight === votingRound.roundHeight &&
+          vr.timestamp === votingRound.timestamp
+      );
+
+      if (roundExists) {
+        return prev; // Don't add duplicate
+      }
+
+      return [...prev, votingRound];
+    });
     setCurrentRoundVotes(null);
   };
 

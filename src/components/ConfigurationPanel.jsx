@@ -441,15 +441,15 @@ export default function ConfigurationPanel({
                 <label>
                   Byzantine Nodes
                   <span className="field-desc">
-                    Number of malicious nodes (0-
+                    Number of malicious nodes (safe limit: ≤
                     {Math.floor(config.network.nodeCount / 3)},
-                    max n/3)
+                    exceeding n/3 will cause protocol failure)
                   </span>
                 </label>
                 <input
                   type="number"
                   min="0"
-                  max={Math.floor(config.network.nodeCount / 3)}
+                  max={config.network.nodeCount - 1}
                   value={config.nodeBehavior.byzantineCount}
                   onChange={(e) =>
                     handleChange(
@@ -459,6 +459,21 @@ export default function ConfigurationPanel({
                     )
                   }
                 />
+                {config.nodeBehavior.byzantineCount >
+                  Math.floor(config.network.nodeCount / 3) && (
+                  <span
+                    className="field-warning"
+                    style={{
+                      color: "#ff4444",
+                      fontSize: "0.85em",
+                      fontWeight: "bold",
+                      marginTop: "4px",
+                      display: "block",
+                    }}
+                  >
+                    ⚠️ UNSAFE: Exceeds n/3 - protocol will fail!
+                  </span>
+                )}
               </div>
 
               <div className="config-field">

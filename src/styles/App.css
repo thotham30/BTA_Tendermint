@@ -52,6 +52,24 @@ body {
   border: 1px solid #f59e0b;
 }
 
+.summary-item.critical {
+  background-color: #7f1d1d;
+  border: 2px solid #ef4444;
+  animation: pulse-critical 2s ease-in-out infinite;
+}
+
+@keyframes pulse-critical {
+  0%,
+  100% {
+    border-color: #ef4444;
+    box-shadow: 0 0 0 0 rgba(239, 68, 68, 0.7);
+  }
+  50% {
+    border-color: #dc2626;
+    box-shadow: 0 0 0 4px rgba(239, 68, 68, 0);
+  }
+}
+
 .summary-label {
   color: #94a3b8;
   font-size: 0.85rem;
@@ -369,6 +387,7 @@ button:hover {
 .logs-window {
   position: relative;
   width: 400px;
+  margin: 20px;
   background-color: #1e293b;
   border: 2px solid #334155;
   border-radius: 12px;
@@ -376,6 +395,7 @@ button:hover {
   flex-direction: column;
   box-shadow: 0 4px 6px rgba(0, 0, 0, 0.3);
   overflow: hidden;
+  max-height: 750px;
 }
 
 .logs-title {
@@ -1599,7 +1619,7 @@ button:hover {
   border: 2px solid #334155;
   border-radius: 12px;
   padding: 20px;
-  margin-bottom: 20px;
+  margin: 20px;
   box-shadow: 0 8px 32px rgba(0, 0, 0, 0.4);
 }
 
@@ -2129,13 +2149,13 @@ button:hover {
   display: flex;
   flex-direction: column;
   gap: 20px;
-  overflow-y: auto;
-  max-height: calc(100vh - 400px);
+  /* overflow-y: auto; */
+  /* max-height: calc(100vh - 400px); */
 }
 
 .step-mode-logs {
   margin-top: 20px;
-  max-height: 200px;
+  /* max-height: 200px; */
 }
 
 /* Phase Indicator */

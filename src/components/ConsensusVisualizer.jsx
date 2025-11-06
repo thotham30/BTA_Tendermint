@@ -102,7 +102,7 @@ export default function ConsensusVisualizer() {
         <h3>Committed Blocks</h3>
         <div className="blocks-scroll">
           {blocks.map((block, idx) => (
-            <Block key={idx} block={block} />
+            <Block key={idx} block={block} nodes={nodes} />
           ))}
         </div>
       </div>
