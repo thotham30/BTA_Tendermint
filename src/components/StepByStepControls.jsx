@@ -14,6 +14,7 @@ export default function StepByStepControls() {
     blocks,
     config,
     stepState,
+    stepModeRound,
     nextStep,
     previousStep,
     goToRoundStart,
@@ -39,7 +40,8 @@ export default function StepByStepControls() {
       nodes,
       blocks,
       config,
-      stepState
+      stepState,
+      stepModeRound
     );
 
     updateStepState(result.stepState);
@@ -58,7 +60,13 @@ export default function StepByStepControls() {
 
     // Commit block if this is the commit step and block was committed
     if (result.committed && result.newBlock) {
-      addBlock(result.newBlock);
+      // Check if block is not already in the list to prevent duplicates
+      const blockExists = blocks.some(
+        (b) => b.hash === result.newBlock.hash
+      );
+      if (!blockExists) {
+        addBlock(result.newBlock);
+      }
       if (finalizeRound && result.votingRound) {
         finalizeRound(result.votingRound);
       }
@@ -71,7 +79,7 @@ export default function StepByStepControls() {
       }`,
       "info"
     );
-  }, [currentStep, stepMode]);
+  }, [currentStep, stepMode, stepModeRound]);
 
   // Auto-play steps
   useEffect(() => {
@@ -81,12 +89,20 @@ export default function StepByStepControls() {
       if (currentStep < totalSteps - 1) {
         nextStep();
       } else {
-        toggleAutoPlaySteps(); // Stop at end
+        // At end of round, stop auto-play
+        toggleAutoPlaySteps();
       }
     }, STEP_MODE_CONFIG.autoPlayDelay);
 
     return () => clearInterval(interval);
-  }, [autoPlaySteps, currentStep, stepMode, totalSteps]);
+  }, [
+    autoPlaySteps,
+    currentStep,
+    stepMode,
+    totalSteps,
+    nextStep,
+    toggleAutoPlaySteps,
+  ]);
 
   if (!stepMode) return null;
 
@@ -141,8 +157,19 @@ export default function StepByStepControls() {
           className="step-btn"
           title="Next step"
         >
-          Next ➡️
+          {currentStep >= totalSteps - 1
+            ? "End of Round"
+            : "Next ➡️"}
         </button>
+        {currentStep >= totalSteps - 1 && (
+          <button
+            onClick={goToRoundStart}
+            className="step-btn step-btn-primary"
+            title="Start next round"
+          >
+            🔄 Next Round
+          </button>
+        )}
       </div>
     </div>
   );

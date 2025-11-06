@@ -50,10 +50,13 @@ export function simulateConsensusStep(
     partitionedNodes,
     updateNetworkStats,
     addLog,
+    isSynchronousMode,
   } = consensusContext;
 
   const elapsedTime = Date.now() - roundStartTime;
-  const timedOut = elapsedTime >= timeoutDuration;
+  // In synchronous mode, disable timeouts
+  const timedOut =
+    !isSynchronousMode && elapsedTime >= timeoutDuration;
 
   // Apply network latency simulation
   const latency = config?.network?.latency || DEFAULTS.latency;
@@ -70,7 +73,10 @@ export function simulateConsensusStep(
 
   // Update node availability based on downtime and partitions
   const updatedNodes = nodes.map((n) => {
-    const isDowntime = Math.random() * 100 < downtimePercentage;
+    // In synchronous mode, no random downtime (only partitions can affect nodes)
+    const isDowntime =
+      !isSynchronousMode &&
+      Math.random() * 100 < downtimePercentage;
     const isPartitioned =
       partitionActive && partitionedNodes.includes(n.id);
     const isOnline = !isDowntime && !isPartitioned;
@@ -183,6 +189,7 @@ export function simulateConsensusStep(
   messagesLost += updatedNodes.length - votableNodes.length;
 
   updatePrecommits(
+    votingRound,
     precommitResult.votes,
     config?.consensus?.voteThreshold || DEFAULTS.voteThreshold
   );
@@ -202,8 +209,9 @@ export function simulateConsensusStep(
   let newLiveness = true;
   let newSafety = true;
 
-  // Simulate packet loss affecting consensus
-  const packetLossOccurred = Math.random() * 100 < packetLoss;
+  // Simulate packet loss affecting consensus (only in asynchronous mode)
+  const packetLossOccurred =
+    !isSynchronousMode && Math.random() * 100 < packetLoss;
 
   if (
     approved &&
@@ -252,7 +260,8 @@ export function simulateConsensusStep(
     finalizeVotingRound(votingRound, false);
     updatedNodes.forEach((n) => {
       if (n.isOnline && !n.isPartitioned) {
-        n.state = "Timeout";
+        // In synchronous mode, call it "Failed" instead of "Timeout"
+        n.state = isSynchronousMode ? "Failed" : "Timeout";
         n.color = n.isByzantine ? "#ff6b6b" : "#f94144";
       }
     });
@@ -285,14 +294,16 @@ export function executeStepMode(
   nodes,
   blocks,
   config,
-  previousStepState = null
+  previousStepState = null,
+  currentRound = null
 ) {
   const stepState = executeConsensusStep(
     step,
     nodes,
     blocks,
     config,
-    previousStepState
+    previousStepState,
+    currentRound
   );
 
   return {

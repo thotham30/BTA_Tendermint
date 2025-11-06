@@ -367,6 +367,7 @@ button:hover {
 
 /* Logs Window Styles */
 .logs-window {
+  position: relative;
   width: 400px;
   background-color: #1e293b;
   border: 2px solid #334155;
@@ -452,6 +453,9 @@ button:hover {
 }
 
 .logs-clear-btn {
+  position: absolute;
+  bottom: 0;
+  width: 100%;
   padding: 10px 15px;
   background-color: #334155;
   color: #e2e8f0;
@@ -1967,6 +1971,8 @@ button:hover {
   border-radius: 4px;
   font-weight: 600;
   font-size: 0.85rem;
+  display: inline-block;
+  position: relative;
 }
 
 .vote-badge.yes {
@@ -2225,6 +2231,157 @@ button:hover {
   margin: 0 0 15px 0;
   font-size: 1rem;
   text-align: center;
+}
+
+/* Network Mode Controls */
+.network-mode-controls {
+  background-color: #1e293b;
+  border: 2px solid #334155;
+  border-radius: 10px;
+  padding: 15px;
+  margin-top: 15px;
+}
+
+.network-mode-controls h4 {
+  color: #38bdf8;
+  margin: 0 0 15px 0;
+  font-size: 1rem;
+  text-align: center;
+}
+
+.mode-toggle-row {
+  display: flex;
+  justify-content: center;
+  margin-bottom: 15px;
+}
+
+.network-mode-toggle-btn {
+  padding: 12px 28px;
+  color: #f1f5f9;
+  border: 2px solid;
+  border-radius: 8px;
+  font-weight: 600;
+  cursor: pointer;
+  transition: all 0.3s ease;
+  font-size: 0.95rem;
+  min-width: 220px;
+}
+
+.network-mode-toggle-btn:hover {
+  transform: scale(1.05);
+}
+
+.network-mode-toggle-btn.synchronous-active {
+  background: linear-gradient(135deg, #10b981, #059669);
+  border-color: #34d399;
+  box-shadow: 0 4px 20px rgba(16, 185, 129, 0.5);
+}
+
+.network-mode-toggle-btn.asynchronous-active {
+  background: linear-gradient(135deg, #f59e0b, #d97706);
+  border-color: #fbbf24;
+  box-shadow: 0 4px 20px rgba(245, 158, 11, 0.5);
+}
+
+.network-mode-description {
+  color: #cbd5e1;
+  font-size: 0.85rem;
+  line-height: 1.5;
+  text-align: center;
+  margin: 10px 0 0 0;
+  padding: 10px;
+  background-color: #0f172a;
+  border-radius: 6px;
+}
+
+.network-mode-description strong {
+  color: #38bdf8;
+}
+
+/* Timeout Controls */
+.timeout-controls {
+  background-color: #1e293b;
+  border: 2px solid #334155;
+  border-radius: 10px;
+  padding: 15px;
+  margin-top: 15px;
+}
+
+.timeout-controls h4 {
+  color: #38bdf8;
+  margin: 0 0 15px 0;
+  font-size: 1rem;
+  text-align: center;
+}
+
+.timeout-control-item {
+  margin-bottom: 15px;
+}
+
+.timeout-control-item label {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  color: #e2e8f0;
+  font-size: 0.9rem;
+  margin-bottom: 8px;
+}
+
+.timeout-control-item input[type="range"] {
+  width: 100%;
+  height: 6px;
+  background: #334155;
+  border-radius: 5px;
+  outline: none;
+  -webkit-appearance: none;
+  appearance: none;
+}
+
+.timeout-control-item input[type="range"]::-webkit-slider-thumb {
+  -webkit-appearance: none;
+  appearance: none;
+  width: 18px;
+  height: 18px;
+  background: #38bdf8;
+  border-radius: 50%;
+  cursor: pointer;
+  box-shadow: 0 2px 8px rgba(56, 189, 248, 0.5);
+}
+
+.timeout-control-item input[type="range"]::-moz-range-thumb {
+  width: 18px;
+  height: 18px;
+  background: #38bdf8;
+  border-radius: 50%;
+  cursor: pointer;
+  border: none;
+  box-shadow: 0 2px 8px rgba(56, 189, 248, 0.5);
+}
+
+.timeout-control-item input[type="range"]:disabled {
+  opacity: 0.5;
+  cursor: not-allowed;
+}
+
+.checkbox-label {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  cursor: pointer;
+}
+
+.checkbox-label input[type="checkbox"] {
+  width: 18px;
+  height: 18px;
+  cursor: pointer;
+}
+
+.control-help {
+  color: #64748b;
+  font-size: 0.8rem;
+  margin-top: 5px;
+  margin-left: 28px;
+  font-style: italic;
 }
 
 .partition-control-row {

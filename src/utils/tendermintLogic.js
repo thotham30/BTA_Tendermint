@@ -138,15 +138,12 @@ export function voteOnBlock(nodes, block, config) {
       }
     }
 
-    // Honest node with response variance
-    const baseApprovalRate = 0.9;
-    const varianceImpact =
-      (Math.random() * responseVariance) / 1000;
-    const approval = Math.random() > 0.1 - varianceImpact;
-
+    // Honest node - always votes "yes" (100% honest)
+    // For educational purposes, honest nodes are perfectly reliable
+    // Network issues (downtime, partitions) are handled separately
     return {
       nodeId: node.id,
-      vote: approval,
+      vote: true, // Always approve
       isByzantine: false,
     };
   });
@@ -273,9 +270,11 @@ export function executeConsensusStep(
   nodes,
   blocks,
   config,
-  previousStepState = null
+  previousStepState = null,
+  customRound = null
 ) {
-  const round = blocks.length;
+  const round =
+    customRound !== null ? customRound : blocks.length;
   const voteThreshold =
     config?.consensus?.voteThreshold || DEFAULTS.voteThreshold;
 

@@ -72,6 +72,7 @@ export const ConsensusProvider = ({ children }) => {
   const [autoPlaySteps, setAutoPlaySteps] = useState(false);
   const [stepState, setStepState] = useState(null); // Current step's detailed state
   const [highlightedNodes, setHighlightedNodes] = useState([]);
+  const [stepModeRound, setStepModeRound] = useState(0); // Track round in step mode
 
   // Network Partition State
   const [partitionActive, setPartitionActive] = useState(false);
@@ -83,6 +84,10 @@ export const ConsensusProvider = ({ children }) => {
     messagesLost: 0,
   });
 
+  // Network Mode State (synchronous vs asynchronous)
+  const [isSynchronousMode, setIsSynchronousMode] =
+    useState(true);
+
   useEffect(() => {
     const initialNodes = initializeNetwork(
       config.network.nodeCount,
@@ -93,6 +98,7 @@ export const ConsensusProvider = ({ children }) => {
 
   const startConsensus = () => {
     setIsRunning(true);
+    setRoundStartTime(Date.now()); // Initialize round start time
     addLog("Consensus simulation started", "success");
   };
 
@@ -132,6 +138,7 @@ export const ConsensusProvider = ({ children }) => {
     setPartitionedNodes([]);
     setPartitionType("single");
     resetNetworkStats();
+    // Note: isSynchronousMode is not reset to preserve user preference
     addLog("Network reset successfully", "info");
   };
 
@@ -301,6 +308,7 @@ export const ConsensusProvider = ({ children }) => {
         setIsRunning(false);
       }
       setCurrentStep(0);
+      setStepModeRound(0); // Reset step mode round
       setStepDescription(
         "Round Start - Ready to begin consensus"
       );
@@ -311,6 +319,7 @@ export const ConsensusProvider = ({ children }) => {
       setStepHistory([]);
       setStepState(null);
       setHighlightedNodes([]);
+      setStepModeRound(0); // Reset step mode round
       addLog("Switched to Continuous Mode", "info");
     }
   };
@@ -354,11 +363,21 @@ export const ConsensusProvider = ({ children }) => {
   const goToRoundStart = () => {
     if (!stepMode) return;
 
+    // Increment step mode round when starting a new round (not the first time)
+    if (currentStep > 0) {
+      setStepModeRound((prev) => prev + 1);
+    }
+
     setCurrentStep(0);
     setStepDescription("Round Start - Ready to begin consensus");
     setStepState(null);
     setHighlightedNodes([]);
-    addLog("Returned to round start", "info");
+    addLog(
+      `Starting Round ${
+        stepModeRound + (currentStep > 0 ? 1 : 0)
+      }`,
+      "info"
+    );
   };
 
   const toggleAutoPlaySteps = () => {
@@ -367,6 +386,10 @@ export const ConsensusProvider = ({ children }) => {
 
   const updateStepState = (state) => {
     setStepState(state);
+    // Update current proposer from step state
+    if (state?.proposer) {
+      setCurrentProposer(state.proposer);
+    }
   };
 
   const updateStepDescription = (description) => {
@@ -458,6 +481,18 @@ export const ConsensusProvider = ({ children }) => {
     });
   };
 
+  const toggleNetworkMode = () => {
+    setIsSynchronousMode((prev) => !prev);
+    addLog(
+      `Network mode switched to ${
+        !isSynchronousMode
+          ? "Synchronous (no timeouts)"
+          : "Partially Synchronous (with timeouts)"
+      }`,
+      "info"
+    );
+  };
+
   useEffect(() => {
     if (!isRunning) return;
     const baseDelay = config.consensus.roundTimeout || 1500; // Use config or default
@@ -478,6 +513,7 @@ export const ConsensusProvider = ({ children }) => {
         timeoutDuration,
         handleRoundTimeout,
         currentRound: round,
+        isSynchronousMode,
       });
 
       setNodes(updatedNodes);
@@ -610,6 +646,7 @@ export const ConsensusProvider = ({ children }) => {
         autoPlaySteps,
         stepState,
         highlightedNodes,
+        stepModeRound,
         // Network Partition state
         partitionActive,
         partitionedNodes,
@@ -647,6 +684,9 @@ export const ConsensusProvider = ({ children }) => {
         changePartitionType,
         updateNetworkStats,
         resetNetworkStats,
+        // Network Mode functions
+        isSynchronousMode,
+        toggleNetworkMode,
       }}
     >
       {children}

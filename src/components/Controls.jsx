@@ -30,6 +30,8 @@ export default function Controls() {
     partitionType,
     togglePartition,
     changePartitionType,
+    isSynchronousMode,
+    toggleNetworkMode,
   } = useConsensus();
 
   const [showConfigPanel, setShowConfigPanel] = useState(false);
@@ -193,132 +195,181 @@ export default function Controls() {
           </span>
         </div>
 
-        {/* Network Partition Controls */}
-        <div className="network-partition-controls">
-          <h4>🔌 Network Partition Simulation</h4>
+        <div style={{ display: "flex", gap: "20px" }}>
+          {/* Network Partition Controls */}
+          <div className="network-partition-controls">
+            <h4>🔌 Network Partition Simulation</h4>
 
-          <div className="partition-control-row">
-            <button
-              onClick={togglePartition}
-              className={`partition-toggle-btn ${
-                partitionActive ? "active" : ""
-              }`}
-              title={
-                partitionActive
-                  ? "Deactivate network partition"
-                  : "Activate network partition"
-              }
-            >
-              {partitionActive
-                ? "🔌 Disable Partition"
-                : "⚡ Enable Partition"}
-            </button>
-          </div>
-
-          {partitionActive && (
-            <div className="partition-type-selector">
-              <label>Partition Type:</label>
-              <div className="partition-type-buttons">
-                <button
-                  onClick={() => changePartitionType("single")}
-                  className={`partition-type-btn ${
-                    partitionType === "single" ? "active" : ""
-                  }`}
-                  title="Isolate a single node from the network"
-                >
-                  🔴 Single Node
-                </button>
-                <button
-                  onClick={() => changePartitionType("split")}
-                  className={`partition-type-btn ${
-                    partitionType === "split" ? "active" : ""
-                  }`}
-                  title="Split network into two equal partitions"
-                >
-                  ⚡ Split (50/50)
-                </button>
-                <button
-                  onClick={() => changePartitionType("gradual")}
-                  className={`partition-type-btn ${
-                    partitionType === "gradual" ? "active" : ""
-                  }`}
-                  title="Gradual network degradation affecting ~30% of nodes"
-                >
-                  📉 Gradual
-                </button>
-              </div>
-              <p className="partition-help-text">
-                {partitionType === "single" &&
-                  "One node is isolated from all others"}
-                {partitionType === "split" &&
-                  "Network is split into two groups"}
-                {partitionType === "gradual" &&
-                  "Random nodes experience connectivity issues"}
-              </p>
+            <div className="partition-control-row">
+              <button
+                onClick={togglePartition}
+                className={`partition-toggle-btn ${
+                  partitionActive ? "active" : ""
+                }`}
+                title={
+                  partitionActive
+                    ? "Deactivate network partition"
+                    : "Activate network partition"
+                }
+              >
+                {partitionActive
+                  ? "🔌 Disable Partition"
+                  : "⚡ Enable Partition"}
+              </button>
             </div>
-          )}
-        </div>
 
-        {/* Timeout Controls Section */}
-        {/* <div className="timeout-controls">
-          <h4>⏱️ Timeout Settings</h4>
-
-          <div className="timeout-control-item">
-            <label>
-              Initial Timeout:{" "}
-              <span className="range-value">
-                {localTimeout}ms
-              </span>
-            </label>
-            <input
-              type="range"
-              min="1000"
-              max="10000"
-              step="500"
-              value={localTimeout}
-              onChange={(e) =>
-                handleTimeoutChange(Number(e.target.value))
-              }
-              disabled={isRunning}
-            />
+            {partitionActive && (
+              <div className="partition-type-selector">
+                <label>Partition Type:</label>
+                <div className="partition-type-buttons">
+                  <button
+                    onClick={() => changePartitionType("single")}
+                    className={`partition-type-btn ${
+                      partitionType === "single" ? "active" : ""
+                    }`}
+                    title="Isolate a single node from the network"
+                  >
+                    🔴 Single Node
+                  </button>
+                  <button
+                    onClick={() => changePartitionType("split")}
+                    className={`partition-type-btn ${
+                      partitionType === "split" ? "active" : ""
+                    }`}
+                    title="Split network into two equal partitions"
+                  >
+                    ⚡ Split (50/50)
+                  </button>
+                  <button
+                    onClick={() =>
+                      changePartitionType("gradual")
+                    }
+                    className={`partition-type-btn ${
+                      partitionType === "gradual" ? "active" : ""
+                    }`}
+                    title="Gradual network degradation affecting ~30% of nodes"
+                  >
+                    📉 Gradual
+                  </button>
+                </div>
+                <p className="partition-help-text">
+                  {partitionType === "single" &&
+                    "One node is isolated from all others"}
+                  {partitionType === "split" &&
+                    "Network is split into two groups"}
+                  {partitionType === "gradual" &&
+                    "Random nodes experience connectivity issues"}
+                </p>
+              </div>
+            )}
           </div>
 
-          <div className="timeout-control-item">
-            <label>
-              Escalation Multiplier:{" "}
-              <span className="range-value">
-                {localMultiplier.toFixed(1)}x
-              </span>
-            </label>
-            <input
-              type="range"
-              min="1.1"
-              max="2.0"
-              step="0.1"
-              value={localMultiplier}
-              onChange={(e) =>
-                handleMultiplierChange(Number(e.target.value))
-              }
-              disabled={isRunning}
-            />
-          </div>
+          {/* Network Mode Toggle */}
+          <div className="network-mode-controls">
+            <h4>🌐 Network Timing Model</h4>
 
-          <div className="timeout-control-item">
-            <label className="checkbox-label">
-              <input
-                type="checkbox"
-                checked={localEscalation}
-                onChange={handleEscalationToggle}
-                disabled={isRunning}
-              />
-              <span>Enable Timeout Escalation</span>
-            </label>
-            <p className="control-help">
-              When enabled, timeout duration increases
-              exponentially after each failure
+            <div className="mode-toggle-row">
+              <button
+                onClick={toggleNetworkMode}
+                className={`network-mode-toggle-btn ${
+                  isSynchronousMode
+                    ? "synchronous-active"
+                    : "asynchronous-active"
+                }`}
+                title={
+                  isSynchronousMode
+                    ? "Switch to Partially Synchronous (with timeouts)"
+                    : "Switch to Fully Synchronous (no timeouts)"
+                }
+              >
+                {isSynchronousMode
+                  ? "⚡ Synchronous"
+                  : "⏱️ Partially Synchronous"}
+              </button>
+            </div>
+
+            <p className="network-mode-description">
+              {isSynchronousMode ? (
+                <>
+                  <strong>Synchronous:</strong> Messages are
+                  delivered instantly, no timeouts. Easier to
+                  understand consensus flow without timing
+                  complications.
+                </>
+              ) : (
+                <>
+                  <strong>Partially Synchronous:</strong>{" "}
+                  Messages may be delayed, timeouts enabled.
+                  Realistic network conditions with timeout
+                  handling.
+                </>
+              )}
             </p>
           </div>
-        </div> */}
+        </div>
+
+        {/* Timeout Controls Section - Only show in asynchronous mode */}
+        {!isSynchronousMode && (
+          <div className="timeout-controls">
+            <h4>⏱️ Timeout Settings</h4>
+
+            <div className="timeout-control-item">
+              <label>
+                Initial Timeout:{" "}
+                <span className="range-value">
+                  {localTimeout}ms
+                </span>
+              </label>
+              <input
+                type="range"
+                min="1000"
+                max="10000"
+                step="500"
+                value={localTimeout}
+                onChange={(e) =>
+                  handleTimeoutChange(Number(e.target.value))
+                }
+                disabled={isRunning}
+              />
+            </div>
+
+            <div className="timeout-control-item">
+              <label>
+                Escalation Multiplier:{" "}
+                <span className="range-value">
+                  {localMultiplier.toFixed(1)}x
+                </span>
+              </label>
+              <input
+                type="range"
+                min="1.1"
+                max="2.0"
+                step="0.1"
+                value={localMultiplier}
+                onChange={(e) =>
+                  handleMultiplierChange(Number(e.target.value))
+                }
+                disabled={isRunning}
+              />
+            </div>
+
+            <div className="timeout-control-item">
+              <label className="checkbox-label">
+                <input
+                  type="checkbox"
+                  checked={localEscalation}
+                  onChange={handleEscalationToggle}
+                  disabled={isRunning}
+                />
+                <span>Enable Timeout Escalation</span>
+              </label>
+              <p className="control-help">
+                When enabled, timeout duration increases
+                exponentially after each failure
+              </p>
+            </div>
+          </div>
+        )}
 
         <div className="preset-controls">
           <label>Quick Presets:</label>

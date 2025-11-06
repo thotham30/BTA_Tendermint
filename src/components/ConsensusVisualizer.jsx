@@ -25,11 +25,16 @@ export default function ConsensusVisualizer() {
     stepMode,
     highlightedNodes,
     stepState,
+    isSynchronousMode,
+    stepModeRound,
   } = useConsensus();
+
+  // Use stepModeRound in step mode, otherwise use continuous round
+  const displayRound = stepMode ? stepModeRound : round;
 
   return (
     <div className="visualizer-container">
-      <h2>Consensus Round: {round}</h2>
+      <h2>Consensus Round: {displayRound}</h2>
 
       {/* Step-by-Step Phase Indicator */}
       {stepMode && stepState && (
@@ -42,8 +47,8 @@ export default function ConsensusVisualizer() {
         </div>
       )}
 
-      {/* Timeout Visualizer Section */}
-      {isRunning && !stepMode && (
+      {/* Timeout Visualizer Section - Only in asynchronous mode */}
+      {isRunning && !stepMode && !isSynchronousMode && (
         <div className="timeout-section">
           <TimeoutVisualizer />
         </div>

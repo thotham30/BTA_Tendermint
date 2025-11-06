@@ -94,7 +94,7 @@ export const PRESET_CONFIGS = {
   smallNetwork: {
     name: "Small Network",
     network: {
-      nodeCount: 3,
+      nodeCount: 4,
       latency: 50,
       packetLoss: 0,
       messageTimeout: 3000,

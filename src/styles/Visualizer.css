@@ -325,8 +325,10 @@
   font-weight: 600;
 }
 
-/* Vote badges on nodes */
-.vote-badge {
+/* Vote badges on nodes - these are absolutely positioned on Node components */
+.vote-yes-badge,
+.vote-no-badge,
+.vote-pending-badge {
   position: absolute;
   top: -8px;
   right: -8px;

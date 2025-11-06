@@ -45,7 +45,7 @@ export default function Node({ node, isHighlighted = false }) {
     if (voteStatus.vote === true) {
       return (
         <motion.div
-          className="vote-badge vote-yes-badge"
+          className="vote-yes-badge"
           initial={{ scale: 0 }}
           animate={{ scale: 1 }}
           transition={{ type: "spring", stiffness: 500 }}
@@ -56,7 +56,7 @@ export default function Node({ node, isHighlighted = false }) {
     } else if (voteStatus.vote === false) {
       return (
         <motion.div
-          className="vote-badge vote-no-badge"
+          className="vote-no-badge"
           initial={{ scale: 0 }}
           animate={{ scale: 1 }}
           transition={{ type: "spring", stiffness: 500 }}
@@ -65,9 +65,7 @@ export default function Node({ node, isHighlighted = false }) {
         </motion.div>
       );
     } else {
-      return (
-        <div className="vote-badge vote-pending-badge">?</div>
-      );
+      return <div className="vote-pending-badge">?</div>;
     }
   };
 
