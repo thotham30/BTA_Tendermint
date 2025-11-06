@@ -105,14 +105,40 @@ The visualizer includes **full Byzantine node simulation** to demonstrate Byzant
 - **Timeout Visualization**: Real-time display of timeout progress and history
 - **Adaptive Timeouts**: Multiplier-based timeout increases (default: 1.5x)
 
-#### 4. **Network Conditions**
+#### 4. **Network Partitioning Simulation** 🆕
+
+- **Partition Types**:
+  - **Single Node Isolation**: Disconnect one node from the network
+  - **Split Partition**: Divide network into two equal groups (e.g., 2 vs 2)
+  - **Gradual Degradation**: Random nodes (~30%) experience connectivity issues
+- **Real-time Partition Control**: Toggle network partitions on/off during simulation
+- **Partition Visualization**:
+  - Partitioned nodes displayed with dashed orange borders
+  - 🔌 Partition indicator badge on affected nodes
+  - Visual partition line showing communication disruption
+- **Network Statistics Tracking**:
+  - Messages sent, delivered, and lost
+  - Message delivery rate percentage
+  - Real-time network health metrics
+- **Educational Value**:
+  - Demonstrates liveness failures under network partitions
+  - Shows why consensus requires majority connectivity
+  - Tests Byzantine Fault Tolerance with combined network issues
+  - Illustrates split-brain scenarios and safety preservation
+- **Partition Impact**:
+  - Partitioned nodes cannot vote or receive proposals
+  - Consensus fails when <2/3 nodes can communicate
+  - Increased timeout rates during partitions
+  - Liveness degradation warnings in indicators
+
+#### 5. **Network Conditions**
 
 - **Configurable Latency**: Simulate network delays (0-5000ms)
 - **Packet Loss**: Simulate unreliable networks (0-100% packet loss)
 - **Node Downtime**: Random node unavailability (0-100% downtime)
 - **Response Variance**: Variable node response times
 
-#### 5. **Voting Visualization**
+#### 6. **Voting Visualization**
 
 - **Voting Breakdown**: Detailed view of prevotes and precommits per round
 - **Voting History**: Historical record of all consensus rounds
@@ -120,14 +146,15 @@ The visualizer includes **full Byzantine node simulation** to demonstrate Byzant
 - **Voting Statistics**: Aggregated metrics on voting patterns
 - **Round Details**: Expandable view for examining specific rounds
 
-#### 6. **Liveness & Safety Monitoring**
+#### 7. **Liveness & Safety Monitoring**
 
 - **Liveness Indicator**: Tracks whether the network continues making progress
 - **Safety Indicator**: Monitors for fork scenarios and conflicting commits
 - **Real-time Status**: Visual indicators for both properties
 - **Violation Detection**: Automatic detection and logging of property violations
+- **Partition Awareness**: Indicators show impact of network partitions on consensus properties
 
-#### 7. **Configuration Management**
+#### 8. **Configuration Management**
 
 - **Preset Configurations**: Pre-built scenarios (Small Network, Large Network, Byzantine Test, Partition Test)
 - **Custom Configurations**: Full control over all simulation parameters
@@ -135,15 +162,16 @@ The visualizer includes **full Byzantine node simulation** to demonstrate Byzant
 - **Import/Export**: Save and load configurations as JSON files
 - **Local Storage**: Automatic persistence of configuration settings
 
-#### 8. **Real-Time Controls**
+#### 9. **Real-Time Controls**
 
 - **Start/Stop/Reset**: Full simulation control
 - **Speed Control**: Adjustable simulation speed (0.5x to 5x)
 - **Simulation Mode**: Toggle between Continuous and Step-by-Step modes
 - **Configuration Panel**: Live parameter adjustment
 - **Interactive UI**: Responsive controls with immediate feedback
+- **Network Partition Controls**: Toggle and configure network partitions in real-time
 
-#### 9. **Step-by-Step Mode** 🆕
+#### 10. **Step-by-Step Mode** 🆕
 
 - **Educational Mode**: Advance through consensus one step at a time
 - **8 Defined Steps**:
@@ -178,13 +206,14 @@ The visualizer includes **full Byzantine node simulation** to demonstrate Byzant
   - Commit: Green
   - Complete: Gray
 
-#### 10. **Logging System**
+#### 11. **Logging System**
 
 - **Comprehensive Logs**: Detailed event logging with timestamps
 - **Log Categories**: Info, warning, error, success, and block events
 - **Log Levels**: Configurable verbosity (minimal, normal, verbose)
 - **Color-Coded**: Visual distinction between log types
 - **Scrollable Window**: Persistent log history
+- **Network Partition Logging**: Special indicators and stats for partition events
 
 ## Project Structure
 
@@ -215,7 +244,8 @@ BTA Project/
 │   │   ├── VotingVisualization.jsx   # Visual voting representation
 │   │   ├── StepByStepControls.jsx    # Step-by-step mode controls 🆕
 │   │   ├── StateInspector.jsx        # Step state inspection panel 🆕
-│   │   └── DetailedStepView.jsx      # Detailed step breakdown 🆕
+│   │   ├── DetailedStepView.jsx      # Detailed step breakdown 🆕
+│   │   └── NetworkPartition.jsx      # Network partition visualization 🆕
 │   │
 │   ├── context/
 │   │   └── ConsensusContext.jsx      # Global state management via React Context
@@ -643,9 +673,205 @@ Use Byzantine simulation to teach:
 - **Real-world**: Byzantine Generals Problem in action
 - **Limits**: What happens when f ≥ n/3
 
+## How to Use Network Partition Simulation
+
+### Quick Start
+
+1. Start the simulation with any configuration
+2. Click **"⚡ Enable Partition"** button in the Network Partition Controls section
+3. Choose a partition type:
+   - **🔴 Single Node**: Isolates one node from the network
+   - **⚡ Split (50/50)**: Divides network into two equal groups
+   - **📉 Gradual**: Random connectivity issues affecting ~30% of nodes
+4. Observe consensus behavior:
+   - Partitioned nodes show dashed orange borders with 🔌 indicator
+   - Network statistics panel displays real-time message delivery rates
+   - Liveness indicator shows degradation or violation
+   - Logs track timeout events caused by partition
+
+### Understanding Partition Types
+
+#### Single Node Isolation
+
+**What it does**: Disconnects one node from all others
+
+**Expected behavior**:
+
+- Isolated node cannot participate in voting
+- Consensus continues with remaining nodes (if still > 2/3 threshold)
+- Example: With 4 nodes, isolating 1 node leaves 3 nodes (75%) - consensus succeeds
+
+**Use case**: Test system resilience to individual node failures
+
+#### Split Partition (50/50)
+
+**What it does**: Divides network into two equal-sized groups
+
+**Expected behavior**:
+
+- Each partition has 50% of nodes
+- Neither partition reaches 2/3 threshold
+- **Consensus fails completely** - demonstrating liveness violation
+- Safety is maintained (no conflicting blocks committed)
+- Example: 4 nodes split into 2+2 - neither group can reach 3/4 threshold
+
+**Use case**: Demonstrate why consensus requires majority connectivity
+
+#### Gradual Degradation
+
+**What it does**: Random nodes (~30%) experience connectivity issues
+
+**Expected behavior**:
+
+- Some rounds succeed, some fail
+- Intermittent timeouts
+- Variable consensus success rate
+- Demonstrates network instability effects
+
+**Use case**: Simulate real-world network unreliability
+
+### Observing Partition Effects
+
+#### In the Visualizer
+
+- **Partitioned Nodes**: Dashed orange border, 🔌 badge, "Partitioned" state
+- **Network Partition Panel**: Shows affected nodes, delivery rate, messages lost
+- **Visual Partition Line**: Animated dashed line indicating communication disruption
+
+#### In Liveness Indicator
+
+- **Degraded Status** (⚠️): When partition affects >30% of nodes
+  - Shows percentage of partitioned nodes
+  - Explains consensus slowdown
+- **Violated Status** (❌): When consensus cannot progress
+  - Indicates insufficient nodes for 2/3 threshold
+
+#### In Safety Indicator
+
+- **Maintained** (✅): No conflicting commits during partition
+  - Shows safety property preserved despite liveness failure
+- **Violated** (⚠️): Fork detected (rare, indicates split-brain scenario)
+  - Warns about possible conflicting commits in separate partitions
+
+#### In Logs Window
+
+- **Partition Status Summary**: Real-time partition statistics
+  - Affected node count
+  - Message delivery rate
+  - Messages lost count
+- **Timeout Events**: Logs showing timeouts caused by partition
+- **Consensus Failures**: Messages when threshold cannot be met
+
+### Testing Scenarios with Network Partitions
+
+#### Scenario 1: Minority Partition (4 nodes, 1 isolated)
+
+```
+Setup: 4 nodes → Enable Partition → Single Node type
+Expected: Consensus succeeds with 3/4 nodes (75% > 67%)
+Learning: System tolerates minority partition
+```
+
+#### Scenario 2: Split-Brain Test (4 nodes, 2+2 split)
+
+```
+Setup: 4 nodes → Enable Partition → Split (50/50) type
+Expected: Complete liveness failure, no consensus possible
+Learning: Demonstrates why 2/3 threshold is critical
+```
+
+#### Scenario 3: Partition Healing (toggle on/off)
+
+```
+Setup: 4 nodes → Enable Partition → Wait for timeouts → Disable Partition
+Expected: Consensus resumes after partition healed
+Learning: Shows network recovery behavior
+```
+
+#### Scenario 4: Byzantine Nodes + Partition (7 nodes, 2 Byzantine, split)
+
+```
+Setup: 7 nodes, 2 Byzantine → Enable Partition → Split type
+Expected: Severe consensus degradation, both liveness and safety concerns
+Learning: Combined adversarial conditions
+```
+
+#### Scenario 5: High Latency + Partition
+
+```
+Setup: Set network latency to 2000ms → Enable Partition → Gradual type
+Expected: Very slow consensus with frequent timeouts
+Learning: Network conditions compound partition effects
+```
+
+### Configuration Tips
+
+**Optimal Testing Setup**:
+
+- Use 6-7 nodes for best partition demonstration
+- Enable verbose logging to see all partition events
+- Use Partition Test preset as starting point
+
+**Observing Specific Properties**:
+
+- **Liveness**: Split partition shows clear liveness violation
+- **Safety**: All partition types should maintain safety
+- **Byzantine Tolerance**: Combine with Byzantine nodes to test limits
+
+**Common Patterns**:
+
+1. **Majority Connectivity**: Consensus works if >2/3 nodes can communicate
+2. **Minority Isolation**: Small partitions don't prevent consensus
+3. **Split-Brain**: Equal splits prevent all consensus
+4. **Healing**: Consensus resumes when partition resolves
+
+### Troubleshooting
+
+**Q: Partition enabled but consensus still works?**
+
+- A: Check partition type. "Single Node" with 6+ total nodes leaves enough for consensus.
+- A: Verify affected nodes count in partition panel.
+
+**Q: Why does safety indicator stay green during partition?**
+
+- A: Safety is maintained! Tendermint prevents conflicting commits even when liveness fails.
+
+**Q: Messages lost shows 0?**
+
+- A: Messages are lost when sent to partitioned nodes. May take a few rounds to accumulate.
+
+**Q: How to see which specific nodes are partitioned?**
+
+- A: Look for dashed orange borders with 🔌 icon, or check "Affected Nodes" in partition panel.
+
+**Q: Can partitioned nodes become proposers?**
+
+- A: No, partitioned nodes are excluded from proposer selection like Byzantine nodes.
+
+### Educational Value
+
+Use network partition simulation to teach:
+
+- **CAP Theorem**: Consistency vs Availability trade-off during partition
+- **Liveness vs Safety**: Safety maintained even when liveness fails
+- **2/3 Threshold**: Why BFT consensus requires supermajority
+- **Split-Brain Scenarios**: Dangers of network partition in distributed systems
+- **Partition Tolerance**: How Tendermint handles network failures
+- **Real-World Failures**: Simulate datacenter disconnections, router failures, etc.
+
+### Best Practices
+
+1. **Start Simple**: Test single node isolation before split partitions
+2. **Observe First**: Watch a few rounds before analyzing
+3. **Use Step-by-Step Mode**: Combine with step mode for detailed inspection
+4. **Compare Configs**: Run with/without partition to see difference
+5. **Document Behavior**: Note which configurations cause which failures
+
 ## For LLM Context
 
-This project simulates the Tendermint BFT consensus protocol with a React-based frontend. The core logic resides in `src/utils/` (consensus algorithm, network simulation, configuration). The UI components in `src/components/` provide visualization and controls. State is managed centrally via `ConsensusContext.jsx`. The system models Byzantine nodes, network failures, voting phases, timeout mechanisms, and tracks liveness/safety properties in real-time. Configuration is highly flexible with validation, presets, and import/export capabilities.
+This project simulates the Tendermint BFT consensus protocol with a React-based frontend. The core logic resides in `src/utils/` (consensus algorithm, network simulation, configuration). The UI components in `src/components/` provide visualization and controls. State is managed centrally via `ConsensusContext.jsx`. The system models Byzantine nodes, network failures, network partitions, voting phases, timeout mechanisms, and tracks liveness/safety properties in real-time. Configuration is highly flexible with validation, presets, and import/export capabilities.
+
+**New Network Partition Feature**: The visualizer now supports real-time network partition simulation with three partition types (single node isolation, 50/50 split, gradual degradation). Partitioned nodes are visually distinct with dashed borders and cannot participate in consensus. The feature includes network statistics tracking (messages sent/delivered/lost), real-time delivery rate monitoring, and integration with liveness/safety indicators to show partition impact on consensus properties. This feature demonstrates CAP theorem principles, liveness vs safety trade-offs, and the importance of majority connectivity in BFT consensus.
 
 **New Step-by-Step Mode**: The visualizer now supports an educational step-by-step mode where users can advance through consensus one action at a time. This mode breaks down each consensus round into 8 distinct steps (Round Start, Block Proposal, Prevote, Prevote Tally, Precommit, Precommit Tally, Commit, Round Complete). Each step provides detailed state inspection showing the proposer, block details, vote counts, threshold status, and node states. The mode includes visual highlighting of active nodes, phase color-coding, tabular vote breakdowns, and navigation controls (next/previous, go to start, auto-play). This feature is ideal for educational purposes, debugging, and understanding the consensus process in detail.
 
@@ -687,6 +913,8 @@ This project simulates the Tendermint BFT consensus protocol with a React-based 
 - **`StateInspector.jsx`**: Displays current step information including proposer, block details, vote counts, thresholds, network status, and commit status. Shows phase-specific data with color-coded badges.
 
 - **`DetailedStepView.jsx`**: Provides detailed tabular breakdown of votes, node states, and consensus progress. Shows vote-by-vote analysis with Byzantine node identification.
+
+- **`NetworkPartition.jsx`**: Visualizes active network partitions with statistics panel showing affected nodes, message delivery rates, and network health metrics. Displays partition type, visual indicators, and real-time network statistics (messages sent/delivered/lost).
 
 - **Voting Components**: Multiple specialized components (VotingBreakdown, VotingDetails, VotingHistory, VotingStatistics, VotingVisualization) provide comprehensive voting analysis from different perspectives.
 

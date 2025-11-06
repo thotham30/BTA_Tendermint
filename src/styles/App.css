@@ -2210,3 +2210,152 @@ button:hover {
     max-height: none;
   }
 }
+
+/* Network Partition Controls */
+.network-partition-controls {
+  background-color: #1e293b;
+  border: 2px solid #334155;
+  border-radius: 10px;
+  padding: 15px;
+  margin-top: 15px;
+}
+
+.network-partition-controls h4 {
+  color: #f59e0b;
+  margin: 0 0 15px 0;
+  font-size: 1rem;
+  text-align: center;
+}
+
+.partition-control-row {
+  display: flex;
+  justify-content: center;
+  margin-bottom: 15px;
+}
+
+.partition-toggle-btn {
+  padding: 12px 24px;
+  background: linear-gradient(135deg, #334155, #475569);
+  color: #f1f5f9;
+  border: 2px solid #64748b;
+  border-radius: 8px;
+  font-weight: 600;
+  cursor: pointer;
+  transition: all 0.3s ease;
+  font-size: 0.95rem;
+}
+
+.partition-toggle-btn:hover {
+  transform: scale(1.05);
+  box-shadow: 0 4px 15px rgba(100, 116, 139, 0.4);
+}
+
+.partition-toggle-btn.active {
+  background: linear-gradient(135deg, #f59e0b, #d97706);
+  border-color: #fbbf24;
+  box-shadow: 0 4px 20px rgba(245, 158, 11, 0.5);
+}
+
+.partition-type-selector {
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+}
+
+.partition-type-selector label {
+  color: #94a3b8;
+  font-size: 0.85rem;
+  font-weight: 600;
+}
+
+.partition-type-buttons {
+  display: flex;
+  gap: 10px;
+  justify-content: center;
+  flex-wrap: wrap;
+}
+
+.partition-type-btn {
+  padding: 10px 16px;
+  background-color: #334155;
+  color: #e2e8f0;
+  border: 2px solid #475569;
+  border-radius: 6px;
+  cursor: pointer;
+  transition: all 0.3s ease;
+  font-size: 0.85rem;
+  font-weight: 600;
+}
+
+.partition-type-btn:hover {
+  background-color: #475569;
+  transform: translateY(-2px);
+  box-shadow: 0 3px 10px rgba(0, 0, 0, 0.3);
+}
+
+.partition-type-btn.active {
+  background-color: #f59e0b;
+  border-color: #fbbf24;
+  color: #0f172a;
+  box-shadow: 0 3px 15px rgba(245, 158, 11, 0.4);
+}
+
+.partition-help-text {
+  color: #64748b;
+  font-size: 0.8rem;
+  text-align: center;
+  margin-top: 8px;
+  font-style: italic;
+}
+
+/* Partition Status in Logs */
+.partition-status-summary {
+  background-color: rgba(245, 158, 11, 0.1);
+  border: 2px solid #f59e0b;
+  border-radius: 8px;
+  padding: 15px;
+  margin-bottom: 15px;
+}
+
+.status-header {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  margin-bottom: 12px;
+}
+
+.status-icon {
+  font-size: 1.5rem;
+}
+
+.status-text {
+  color: #f59e0b;
+  font-weight: 700;
+  font-size: 1rem;
+}
+
+.partition-stats {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(140px, 1fr));
+  gap: 10px;
+}
+
+.partition-stat-item {
+  display: flex;
+  justify-content: space-between;
+  padding: 8px 12px;
+  background-color: #0f172a;
+  border-radius: 6px;
+  border: 1px solid #334155;
+}
+
+.partition-stat-item span:first-child {
+  color: #94a3b8;
+  font-size: 0.8rem;
+}
+
+.partition-stat-item span:last-child {
+  color: #f1f5f9;
+  font-weight: 700;
+  font-size: 0.9rem;
+}

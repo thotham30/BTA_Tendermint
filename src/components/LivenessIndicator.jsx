@@ -2,8 +2,15 @@ import React from "react";
 import { useConsensus } from "../context/ConsensusContext";
 
 export default function LivenessIndicator() {
-  const { liveness, roundTimeouts, round, consecutiveTimeouts } =
-    useConsensus();
+  const {
+    liveness,
+    roundTimeouts,
+    round,
+    consecutiveTimeouts,
+    partitionActive,
+    partitionedNodes,
+    nodes,
+  } = useConsensus();
 
   // Calculate timeout impact on liveness
   const timeoutRate =
@@ -11,11 +18,20 @@ export default function LivenessIndicator() {
   const hasHighTimeoutRate = timeoutRate > 40;
   const hasConsecutiveTimeouts = consecutiveTimeouts > 3;
 
-  // Liveness is degraded if there are excessive timeouts
+  // Calculate partition impact
+  const partitionRatio =
+    partitionActive && nodes.length > 0
+      ? partitionedNodes.length / nodes.length
+      : 0;
+  const hasSignificantPartition = partitionRatio > 0.3; // > 30% partitioned
+
+  // Liveness is degraded if there are excessive timeouts or partitions
   const livenessStatus =
-    liveness && !hasHighTimeoutRate
+    liveness && !hasHighTimeoutRate && !hasSignificantPartition
       ? "Maintained"
-      : hasHighTimeoutRate || hasConsecutiveTimeouts
+      : hasHighTimeoutRate ||
+        hasConsecutiveTimeouts ||
+        hasSignificantPartition
       ? "Degraded"
       : "Violated";
 
@@ -29,12 +45,29 @@ export default function LivenessIndicator() {
     if (livenessStatus === "Maintained") {
       return "Consensus progressing normally";
     } else if (livenessStatus === "Degraded") {
-      return `${
-        hasHighTimeoutRate
-          ? `High timeout rate (${timeoutRate.toFixed(1)}%)`
-          : `${consecutiveTimeouts} consecutive timeouts`
-      } - Progress slowed`;
+      const reasons = [];
+      if (hasHighTimeoutRate) {
+        reasons.push(
+          `High timeout rate (${timeoutRate.toFixed(1)}%)`
+        );
+      }
+      if (hasConsecutiveTimeouts) {
+        reasons.push(
+          `${consecutiveTimeouts} consecutive timeouts`
+        );
+      }
+      if (hasSignificantPartition) {
+        reasons.push(
+          `${partitionedNodes.length} nodes partitioned (${(
+            partitionRatio * 100
+          ).toFixed(0)}%)`
+        );
+      }
+      return reasons.join(", ") + " - Progress slowed";
     } else {
+      if (partitionActive && hasSignificantPartition) {
+        return "Network partition preventing consensus progress";
+      }
       return "Consensus cannot progress";
     }
   };
@@ -55,10 +88,14 @@ export default function LivenessIndicator() {
           : "❌"}
       </h4>
       <p className="indicator-message">{getMessage()}</p>
-      {(hasHighTimeoutRate || hasConsecutiveTimeouts) && (
+      {(hasHighTimeoutRate ||
+        hasConsecutiveTimeouts ||
+        hasSignificantPartition) && (
         <p className="indicator-hint">
-          💡 Timeouts indicate network issues or Byzantine
-          behavior affecting liveness
+          💡{" "}
+          {hasSignificantPartition
+            ? "Network partitions prevent nodes from reaching consensus threshold"
+            : "Timeouts indicate network issues or Byzantine behavior affecting liveness"}
         </p>
       )}
     </div>

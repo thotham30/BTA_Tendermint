@@ -26,6 +26,10 @@ export default function Controls() {
     timeoutMultiplier,
     timeoutEscalationEnabled,
     updateTimeoutSettings,
+    partitionActive,
+    partitionType,
+    togglePartition,
+    changePartitionType,
   } = useConsensus();
 
   const [showConfigPanel, setShowConfigPanel] = useState(false);
@@ -185,7 +189,74 @@ export default function Controls() {
             {config.network.latency}ms latency
             {config.nodeBehavior.byzantineCount > 0 &&
               ` • ${config.nodeBehavior.byzantineCount} byzantine`}
+            {partitionActive && ` • ⚠️ partition active`}
           </span>
+        </div>
+
+        {/* Network Partition Controls */}
+        <div className="network-partition-controls">
+          <h4>🔌 Network Partition Simulation</h4>
+
+          <div className="partition-control-row">
+            <button
+              onClick={togglePartition}
+              className={`partition-toggle-btn ${
+                partitionActive ? "active" : ""
+              }`}
+              title={
+                partitionActive
+                  ? "Deactivate network partition"
+                  : "Activate network partition"
+              }
+            >
+              {partitionActive
+                ? "🔌 Disable Partition"
+                : "⚡ Enable Partition"}
+            </button>
+          </div>
+
+          {partitionActive && (
+            <div className="partition-type-selector">
+              <label>Partition Type:</label>
+              <div className="partition-type-buttons">
+                <button
+                  onClick={() => changePartitionType("single")}
+                  className={`partition-type-btn ${
+                    partitionType === "single" ? "active" : ""
+                  }`}
+                  title="Isolate a single node from the network"
+                >
+                  🔴 Single Node
+                </button>
+                <button
+                  onClick={() => changePartitionType("split")}
+                  className={`partition-type-btn ${
+                    partitionType === "split" ? "active" : ""
+                  }`}
+                  title="Split network into two equal partitions"
+                >
+                  ⚡ Split (50/50)
+                </button>
+                <button
+                  onClick={() => changePartitionType("gradual")}
+                  className={`partition-type-btn ${
+                    partitionType === "gradual" ? "active" : ""
+                  }`}
+                  title="Gradual network degradation affecting ~30% of nodes"
+                >
+                  📉 Gradual
+                </button>
+              </div>
+              <p className="partition-help-text">
+                {partitionType === "single" &&
+                  "One node is isolated from all others"}
+                {partitionType === "split" &&
+                  "Network is split into two groups"}
+                {partitionType === "gradual" &&
+                  "Random nodes experience connectivity issues"}
+              </p>
+            </div>
+          )}
         </div>
 
         {/* Timeout Controls Section */}

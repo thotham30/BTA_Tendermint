@@ -9,6 +9,7 @@ import VotingDetails from "./VotingDetails";
 import VotingStatistics from "./VotingStatistics";
 import TimeoutVisualizer from "./TimeoutVisualizer";
 import TimeoutStats from "./TimeoutStats";
+import NetworkPartition from "./NetworkPartition";
 import { useConsensus } from "../context/ConsensusContext";
 import "../styles/Visualizer.css";
 
@@ -47,6 +48,9 @@ export default function ConsensusVisualizer() {
           <TimeoutVisualizer />
         </div>
       )}
+
+      {/* Network Partition Panel */}
+      <NetworkPartition />
 
       <div className="nodes-container">
         {nodes.map((node) => {

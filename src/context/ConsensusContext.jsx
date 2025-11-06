@@ -73,6 +73,16 @@ export const ConsensusProvider = ({ children }) => {
   const [stepState, setStepState] = useState(null); // Current step's detailed state
   const [highlightedNodes, setHighlightedNodes] = useState([]);
 
+  // Network Partition State
+  const [partitionActive, setPartitionActive] = useState(false);
+  const [partitionedNodes, setPartitionedNodes] = useState([]);
+  const [partitionType, setPartitionType] = useState("single"); // "single", "split", "gradual"
+  const [networkStats, setNetworkStats] = useState({
+    messagesSent: 0,
+    messagesDelivered: 0,
+    messagesLost: 0,
+  });
+
   useEffect(() => {
     const initialNodes = initializeNetwork(
       config.network.nodeCount,
@@ -117,6 +127,11 @@ export const ConsensusProvider = ({ children }) => {
     setStepDescription("Ready to start");
     setStepState(null);
     setHighlightedNodes([]);
+    // Reset network partition state
+    setPartitionActive(false);
+    setPartitionedNodes([]);
+    setPartitionType("single");
+    resetNetworkStats();
     addLog("Network reset successfully", "info");
   };
 
@@ -370,6 +385,79 @@ export const ConsensusProvider = ({ children }) => {
     setBlocks((prev) => [...prev, newBlock]);
   };
 
+  // Network Partition Functions
+  const togglePartition = () => {
+    const newState = !partitionActive;
+    setPartitionActive(newState);
+    if (newState) {
+      applyPartitionType(partitionType);
+      addLog(
+        `Network partition activated (${partitionType})`,
+        "warning"
+      );
+    } else {
+      setPartitionedNodes([]);
+      addLog("Network partition deactivated", "success");
+    }
+  };
+
+  const applyPartitionType = (type) => {
+    const nodeCount = nodes.length;
+    let partitioned = [];
+
+    switch (type) {
+      case "single":
+        // Isolate first node
+        partitioned = [nodes[0]?.id].filter(Boolean);
+        break;
+      case "split":
+        // Split network in half
+        const half = Math.floor(nodeCount / 2);
+        partitioned = nodes.slice(0, half).map((n) => n.id);
+        break;
+      case "gradual":
+        // Simulate gradual degradation - randomly select nodes
+        const count = Math.max(1, Math.floor(nodeCount * 0.3));
+        partitioned = nodes
+          .sort(() => Math.random() - 0.5)
+          .slice(0, count)
+          .map((n) => n.id);
+        break;
+      default:
+        partitioned = [];
+    }
+
+    setPartitionedNodes(partitioned);
+    addLog(
+      `Partition type changed to ${type}, ${partitioned.length} nodes affected`,
+      "info"
+    );
+  };
+
+  const changePartitionType = (type) => {
+    setPartitionType(type);
+    if (partitionActive) {
+      applyPartitionType(type);
+    }
+  };
+
+  const updateNetworkStats = (stats) => {
+    setNetworkStats((prev) => ({
+      messagesSent: prev.messagesSent + (stats.sent || 0),
+      messagesDelivered:
+        prev.messagesDelivered + (stats.delivered || 0),
+      messagesLost: prev.messagesLost + (stats.lost || 0),
+    }));
+  };
+
+  const resetNetworkStats = () => {
+    setNetworkStats({
+      messagesSent: 0,
+      messagesDelivered: 0,
+      messagesLost: 0,
+    });
+  };
+
   useEffect(() => {
     if (!isRunning) return;
     const baseDelay = config.consensus.roundTimeout || 1500; // Use config or default
@@ -522,6 +610,11 @@ export const ConsensusProvider = ({ children }) => {
         autoPlaySteps,
         stepState,
         highlightedNodes,
+        // Network Partition state
+        partitionActive,
+        partitionedNodes,
+        partitionType,
+        networkStats,
         startConsensus,
         stopConsensus,
         resetNetwork,
@@ -549,6 +642,11 @@ export const ConsensusProvider = ({ children }) => {
         updateHighlightedNodes,
         updateNodes,
         addBlock,
+        // Network Partition functions
+        togglePartition,
+        changePartitionType,
+        updateNetworkStats,
+        resetNetworkStats,
       }}
     >
       {children}
