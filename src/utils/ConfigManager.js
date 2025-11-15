@@ -66,6 +66,13 @@ export const DEFAULT_CONFIG = {
     latency: 100, // ms
     packetLoss: 0, // percentage
     messageTimeout: 5000, // ms
+    topology: {
+      type: "full-mesh", // full-mesh, ring, star, line, random, random-degree, custom
+      edgeProbability: 0.3, // For random topology (0-1)
+      nodeDegree: 2, // For random-degree topology
+      useGraphRouting: false, // Feature flag: false = broadcast (old), true = graph-based (new)
+    },
+    edges: [], // Custom edges for topology (populated by topology type or custom editor)
   },
   consensus: {
     roundTimeout: 15000, // ms
@@ -98,6 +105,13 @@ export const PRESET_CONFIGS = {
       latency: 50,
       packetLoss: 0,
       messageTimeout: 3000,
+      topology: {
+        type: "full-mesh",
+        edgeProbability: 0.3,
+        nodeDegree: 2,
+        useGraphRouting: false,
+      },
+      edges: [],
     },
     consensus: {
       roundTimeout: 3000,
@@ -127,6 +141,13 @@ export const PRESET_CONFIGS = {
       latency: 200,
       packetLoss: 0,
       messageTimeout: 8000,
+      topology: {
+        type: "full-mesh",
+        edgeProbability: 0.3,
+        nodeDegree: 2,
+        useGraphRouting: false,
+      },
+      edges: [],
     },
     consensus: {
       roundTimeout: 8000,
@@ -156,6 +177,13 @@ export const PRESET_CONFIGS = {
       latency: 100,
       packetLoss: 5,
       messageTimeout: 5000,
+      topology: {
+        type: "ring",
+        edgeProbability: 0.3,
+        nodeDegree: 2,
+        useGraphRouting: false,
+      },
+      edges: [],
     },
     consensus: {
       roundTimeout: 5000,
@@ -185,6 +213,13 @@ export const PRESET_CONFIGS = {
       latency: 150,
       packetLoss: 30,
       messageTimeout: 6000,
+      topology: {
+        type: "random-degree",
+        edgeProbability: 0.3,
+        nodeDegree: 3,
+        useGraphRouting: false,
+      },
+      edges: [],
     },
     consensus: {
       roundTimeout: 6000,
@@ -205,6 +240,42 @@ export const PRESET_CONFIGS = {
       transactionPoolSize: 50,
       durationLimit: "off",
       logLevel: "verbose",
+    },
+  },
+  graphVisualizationDemo: {
+    name: "Graph Visualization Demo",
+    network: {
+      nodeCount: 7,
+      latency: 100,
+      packetLoss: 0,
+      messageTimeout: 5000,
+      topology: {
+        type: "ring", // Try changing to: star, line, random
+        edgeProbability: 0.4,
+        nodeDegree: 3,
+        useGraphRouting: false, // Keep false - routing logic not yet implemented
+      },
+      edges: [],
+    },
+    consensus: {
+      roundTimeout: 5000,
+      voteThreshold: (2 / 3).toFixed(2),
+      blockSize: 10,
+      proposalDelay: 100,
+      timeoutMultiplier: 1.5,
+      timeoutEscalationEnabled: true,
+    },
+    nodeBehavior: {
+      byzantineCount: 1,
+      byzantineType: "faulty",
+      downtimePercentage: 0,
+      responseVariance: 50,
+    },
+    simulation: {
+      transactionRate: "medium",
+      transactionPoolSize: 50,
+      durationLimit: "off",
+      logLevel: "normal",
     },
   },
 };
@@ -235,6 +306,68 @@ export function validateConfig(config) {
     errors.push(
       "Message timeout must be between 1000 and 10000ms"
     );
+  }
+
+  // Topology validation
+  if (network.topology) {
+    const validTopologies = [
+      "full-mesh",
+      "ring",
+      "star",
+      "line",
+      "random",
+      "random-degree",
+      "custom",
+    ];
+    if (!validTopologies.includes(network.topology.type)) {
+      errors.push(
+        `Invalid topology type. Must be one of: ${validTopologies.join(
+          ", "
+        )}`
+      );
+    }
+    if (
+      network.topology.edgeProbability !== undefined &&
+      (network.topology.edgeProbability < 0 ||
+        network.topology.edgeProbability > 1)
+    ) {
+      errors.push("Edge probability must be between 0 and 1");
+    }
+    if (
+      network.topology.nodeDegree !== undefined &&
+      (network.topology.nodeDegree < 1 ||
+        network.topology.nodeDegree >= network.nodeCount)
+    ) {
+      errors.push(
+        `Node degree must be between 1 and ${
+          network.nodeCount - 1
+        }`
+      );
+    }
+  }
+
+  // Edges validation
+  if (network.edges && Array.isArray(network.edges)) {
+    network.edges.forEach((edge, index) => {
+      if (!edge.source || !edge.target) {
+        errors.push(`Edge ${index} missing source or target`);
+      }
+      if (
+        edge.source < 1 ||
+        edge.source > network.nodeCount ||
+        edge.target < 1 ||
+        edge.target > network.nodeCount
+      ) {
+        errors.push(
+          `Edge ${index} has invalid node IDs (must be 1-${network.nodeCount})`
+        );
+      }
+      if (edge.source === edge.target) {
+        errors.push(
+          `Edge ${index} cannot connect node to itself`
+        );
+      }
+    });
   }
 
   // Consensus validation

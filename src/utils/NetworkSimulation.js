@@ -13,23 +13,78 @@ import {
   recordProposalEvidence,
 } from "./tendermintLogic";
 import { DEFAULTS } from "./ConfigManager";
+import {
+  buildTopology,
+  getNeighbors,
+  calculateCircularLayout,
+  calculateForceDirectedLayout,
+} from "./GraphTopology";
 
 export function initializeNetwork(nodeCount, config) {
   const byzantineCount =
     config?.nodeBehavior?.byzantineCount || 0;
 
-  return Array.from({ length: nodeCount }, (_, i) => {
+  // Build network topology
+  const topology = config?.network?.topology || {
+    type: "full-mesh",
+    useGraphRouting: false,
+  };
+  const edges =
+    config?.network?.edges && config.network.edges.length > 0
+      ? config.network.edges
+      : buildTopology(topology.type, nodeCount, {
+          edgeProbability: topology.edgeProbability,
+          nodeDegree: topology.nodeDegree,
+        });
+
+  // Calculate node positions based on topology
+  let positions;
+  if (topology.type === "ring" || topology.type === "star") {
+    positions = calculateCircularLayout(
+      nodeCount,
+      400,
+      300,
+      200
+    );
+  } else if (edges.length > 0) {
+    positions = calculateForceDirectedLayout(nodeCount, edges, {
+      width: 800,
+      height: 600,
+      iterations: 50,
+    });
+  } else {
+    // Default circular layout
+    positions = calculateCircularLayout(
+      nodeCount,
+      400,
+      300,
+      200
+    );
+  }
+
+  // Create nodes with graph data
+  const nodes = Array.from({ length: nodeCount }, (_, i) => {
     const isByzantine = i < byzantineCount;
+    const nodeId = i + 1;
+
     return {
-      id: i + 1,
+      id: nodeId,
       state: "Idle",
       color: isByzantine ? "#ff6b6b" : "#ccc",
       isByzantine,
       byzantineType:
         config?.nodeBehavior?.byzantineType || "faulty",
       isOnline: true,
+
+      // Graph topology fields
+      neighbors: getNeighbors(nodeId, edges),
+      position: positions[nodeId] || { x: 400, y: 300 },
+      inbox: [],
+      outbox: [],
     };
   });
+
+  return nodes;
 }
 
 export function simulateConsensusStep(
@@ -46,7 +101,17 @@ export function simulateConsensusStep(
       ? consensusContext.currentRound
       : blocks.length;
 
-  const proposerNode = getNextProposer(nodes, round);
+  // Get graph routing configuration
+  const edges = consensusContext?.edges || [];
+  const useGraphRouting =
+    consensusContext?.useGraphRouting || false;
+
+  const proposerNode = getNextProposer(
+    nodes,
+    round,
+    edges,
+    useGraphRouting
+  );
 
   const {
     roundStartTime,
@@ -215,9 +280,27 @@ export function simulateConsensusStep(
   const votableNodes = updatedNodes.filter(
     (n) => n.isOnline && !n.isPartitioned
   );
-  messagesSent += updatedNodes.length;
-  messagesDelivered += votableNodes.length;
-  messagesLost += updatedNodes.length - votableNodes.length;
+
+  // Calculate message statistics based on routing mode
+  if (useGraphRouting && edges.length > 0) {
+    // Graph routing: messages only sent to neighbors
+    const reachableFromProposer = proposerNode.neighbors || [];
+    const reachableOnline = reachableFromProposer.filter(
+      (nId) => {
+        const node = updatedNodes.find((n) => n.id === nId);
+        return node && node.isOnline && !node.isPartitioned;
+      }
+    );
+    messagesSent += reachableFromProposer.length;
+    messagesDelivered += reachableOnline.length;
+    messagesLost +=
+      reachableFromProposer.length - reachableOnline.length;
+  } else {
+    // Broadcast mode: messages sent to all
+    messagesSent += updatedNodes.length;
+    messagesDelivered += votableNodes.length;
+    messagesLost += updatedNodes.length - votableNodes.length;
+  }
 
   // Use full validator count (all nodes in votingRound) as denominator
   const totalValidatorsForPrevote =
@@ -228,7 +311,8 @@ export function simulateConsensusStep(
     votableNodes,
     block,
     config,
-    totalValidatorsForPrevote
+    totalValidatorsForPrevote,
+    { edges, useGraphRouting, proposerId: proposerNode.id }
   );
   updatePrevotes(
     votingRound,
@@ -255,13 +339,24 @@ export function simulateConsensusStep(
     );
   }
 
+  // Graph routing info
+  if (useGraphRouting && edges.length > 0 && addLog) {
+    const reachableCount =
+      prevoteResult.reachableNodes?.length || 0;
+    addLog(
+      `Graph Routing: Proposer ${proposerNode.id} can reach ${reachableCount}/${nodes.length} nodes`,
+      "info"
+    );
+  }
+
   // Debug logs
   console.log(
     "[SIM] round used for proposer selection:",
     round,
     "(blocks.length:",
     blocks.length,
-    ")"
+    "), useGraphRouting:",
+    useGraphRouting
   );
   console.log(
     "[SIM] prevotesReceived keys",
@@ -292,7 +387,8 @@ export function simulateConsensusStep(
       votableNodes,
       block,
       config,
-      totalValidatorsForPrecommit
+      totalValidatorsForPrecommit,
+      { edges, useGraphRouting, proposerId: proposerNode.id }
     );
     updatePrecommits(
       votingRound,
@@ -430,7 +526,12 @@ export function simulateConsensusStep(
     newSafety,
     votingRound,
     timedOut: false,
-    newProposer: getNextProposer(updatedNodes, round + 1),
+    newProposer: getNextProposer(
+      updatedNodes,
+      round + 1,
+      edges,
+      useGraphRouting
+    ),
   };
 }
 
@@ -443,15 +544,19 @@ export function executeStepMode(
   blocks,
   config,
   previousStepState = null,
-  currentRound = null
+  currentRound = null,
+  options = {}
 ) {
+  const { edges = null, useGraphRouting = false } = options;
+
   const stepState = executeConsensusStep(
     step,
     nodes,
     blocks,
     config,
     previousStepState,
-    currentRound
+    currentRound,
+    { edges, useGraphRouting }
   );
 
   return {

@@ -2,6 +2,7 @@ import React from "react";
 import { motion } from "framer-motion";
 import Node from "./Node";
 import Block from "./Block";
+import GraphCanvas from "./GraphCanvas";
 import VotingBreakdown from "./VotingBreakdown";
 import VotingVisualization from "./VotingVisualization";
 import VotingHistory from "./VotingHistory";
@@ -27,6 +28,8 @@ export default function ConsensusVisualizer() {
     stepState,
     isSynchronousMode,
     stepModeRound,
+    edges,
+    useGraphRouting,
   } = useConsensus();
 
   // Use stepModeRound in step mode, otherwise use continuous round
@@ -57,26 +60,43 @@ export default function ConsensusVisualizer() {
       {/* Network Partition Panel */}
       <NetworkPartition />
 
-      <div className="nodes-container">
-        {nodes.map((node) => {
-          const isHighlighted =
-            stepMode && highlightedNodes.includes(node.id);
-          return (
-            <motion.div
-              key={node.id}
-              initial={{ scale: 0 }}
-              animate={{
-                scale: isHighlighted ? 1.2 : 1,
-                borderWidth: isHighlighted ? 3 : 0,
-              }}
-              transition={{ duration: 0.3 }}
-              className={isHighlighted ? "highlighted-node" : ""}
-            >
-              <Node node={node} isHighlighted={isHighlighted} />
-            </motion.div>
-          );
-        })}
-      </div>
+      {/* Node Visualization - Use GraphCanvas if graph routing is enabled, otherwise flexbox */}
+      {useGraphRouting || edges.length > 0 ? (
+        <GraphCanvas
+          nodes={nodes}
+          edges={edges}
+          highlightedNodes={stepMode ? highlightedNodes : []}
+          width={800}
+          height={600}
+          showEdgeLabels={false}
+        />
+      ) : (
+        <div className="nodes-container">
+          {nodes.map((node) => {
+            const isHighlighted =
+              stepMode && highlightedNodes.includes(node.id);
+            return (
+              <motion.div
+                key={node.id}
+                initial={{ scale: 0 }}
+                animate={{
+                  scale: isHighlighted ? 1.2 : 1,
+                  borderWidth: isHighlighted ? 3 : 0,
+                }}
+                transition={{ duration: 0.3 }}
+                className={
+                  isHighlighted ? "highlighted-node" : ""
+                }
+              >
+                <Node
+                  node={node}
+                  isHighlighted={isHighlighted}
+                />
+              </motion.div>
+            );
+          })}
+        </div>
+      )}
 
       {/* Voting Visualization Section */}
       {showVotingDetails && currentRoundVotes && (

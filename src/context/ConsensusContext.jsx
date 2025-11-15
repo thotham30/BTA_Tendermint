@@ -15,6 +15,7 @@ import {
   DEFAULT_CONFIG,
   TIMEOUT_LIMITS,
 } from "../utils/ConfigManager";
+import { buildTopology } from "../utils/GraphTopology";
 
 const ConsensusContext = createContext();
 
@@ -33,6 +34,12 @@ export const ConsensusProvider = ({ children }) => {
   const [safety, setSafety] = useState(true);
   const [speed, setSpeed] = useState(1); // 1x speed by default
   const [logs, setLogs] = useState([]);
+
+  // Graph topology state
+  const [edges, setEdges] = useState([]);
+  const [useGraphRouting, setUseGraphRouting] = useState(
+    config?.network?.topology?.useGraphRouting || false
+  );
 
   // Timeout state - initialize from config
   const [roundStartTime, setRoundStartTime] = useState(
@@ -124,7 +131,7 @@ export const ConsensusProvider = ({ children }) => {
   );
 
   // --------------------------
-  // Initialize nodes
+  // Initialize nodes and edges
   // --------------------------
   useEffect(() => {
     const initialNodes = initializeNetwork(
@@ -132,7 +139,27 @@ export const ConsensusProvider = ({ children }) => {
       config
     );
     setNodes(initialNodes);
-  }, [config.network.nodeCount]);
+
+    // Initialize edges based on topology
+    const topology = config?.network?.topology || {
+      type: "full-mesh",
+    };
+    const initialEdges =
+      config?.network?.edges && config.network.edges.length > 0
+        ? config.network.edges
+        : buildTopology(
+            topology.type,
+            config.network.nodeCount,
+            {
+              edgeProbability: topology.edgeProbability,
+              nodeDegree: topology.nodeDegree,
+            }
+          );
+    setEdges(initialEdges);
+
+    // Set graph routing flag
+    setUseGraphRouting(topology.useGraphRouting || false);
+  }, [config.network.nodeCount, config.network.topology?.type]);
 
   // --------------------------
   // Logs & helpers
@@ -1031,6 +1058,11 @@ export const ConsensusProvider = ({ children }) => {
         showVotingDetails,
         showVotingHistory,
         selectedRoundForDetails,
+        // Graph topology state
+        edges,
+        useGraphRouting,
+        setEdges,
+        setUseGraphRouting,
         // Timeout-related state
         roundStartTime,
         timeoutDuration,
