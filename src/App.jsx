@@ -80,10 +80,10 @@ function AppContent() {
         </div>
       </header>
 
-      {/* <div className="indicators">
+      <div className="indicators">
         <LivenessIndicator />
         <SafetyIndicator />
-      </div> */}
+      </div> 
 
       {/* Step-by-Step Controls */}
       {stepMode && <StepByStepControls />}
