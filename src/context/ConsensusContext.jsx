@@ -41,8 +41,9 @@ export const ConsensusProvider = ({ children }) => {
   const [timeoutDuration, setTimeoutDuration] = useState(
     config.consensus.roundTimeout || 5000
   );
-  const [baseTimeoutDuration, setBaseTimeoutDuration] =
-    useState(config.consensus.roundTimeout || 5000);
+  const [baseTimeoutDuration, setBaseTimeoutDuration] = useState(
+    config.consensus.roundTimeout || 15000
+  );
   const [timeoutMultiplier, setTimeoutMultiplier] = useState(
     config.consensus.timeoutMultiplier || 1.5
   );
@@ -75,16 +76,12 @@ export const ConsensusProvider = ({ children }) => {
     useState("Ready to start");
   const [autoPlaySteps, setAutoPlaySteps] = useState(false);
   const [stepState, setStepState] = useState(null);
-  const [highlightedNodes, setHighlightedNodes] = useState(
-    []
-  );
+  const [highlightedNodes, setHighlightedNodes] = useState([]);
   const [stepModeRound, setStepModeRound] = useState(0);
 
   // Network Partition State
   const [partitionActive, setPartitionActive] = useState(false);
-  const [partitionedNodes, setPartitionedNodes] = useState(
-    []
-  );
+  const [partitionedNodes, setPartitionedNodes] = useState([]);
   const [partitionType, setPartitionType] = useState("single");
   const [networkStats, setNetworkStats] = useState({
     messagesSent: 0,
@@ -157,7 +154,9 @@ export const ConsensusProvider = ({ children }) => {
 
       return {
         roundNumber: roundNumber ?? round,
-        roundHeight: blocks.length ? blocks[blocks.length - 1].height + 1 : 1,
+        roundHeight: blocks.length
+          ? blocks[blocks.length - 1].height + 1
+          : 1,
         timestamp: Date.now(),
         prevotesReceived,
         precommitsReceived,
@@ -212,7 +211,9 @@ export const ConsensusProvider = ({ children }) => {
           1;
         const voteThreshold =
           config?.consensus?.voteThreshold || 2 / 3;
-        const requiredVotes = Math.ceil(totalNodes * voteThreshold);
+        const requiredVotes = Math.ceil(
+          totalNodes * voteThreshold
+        );
 
         voting.prevoteThresholdMet =
           voting.prevoteCount >= requiredVotes;
@@ -226,7 +227,14 @@ export const ConsensusProvider = ({ children }) => {
         return voting;
       });
     },
-    [buildEmptyVotingRound, normalizeMapKeys, normalizeId, nodes, round, config]
+    [
+      buildEmptyVotingRound,
+      normalizeMapKeys,
+      normalizeId,
+      nodes,
+      round,
+      config,
+    ]
   );
 
   const updateCurrentRoundVotes = useCallback(
@@ -243,14 +251,14 @@ export const ConsensusProvider = ({ children }) => {
         ),
         prevoteCount:
           votingRound.prevoteCount ??
-          Object.values(votingRound.prevotesReceived || {}).filter(
-            (v) => v === true
-          ).length,
+          Object.values(
+            votingRound.prevotesReceived || {}
+          ).filter((v) => v === true).length,
         precommitCount:
           votingRound.precommitCount ??
-          Object.values(votingRound.precommitsReceived || {}).filter(
-            (v) => v === true
-          ).length,
+          Object.values(
+            votingRound.precommitsReceived || {}
+          ).filter((v) => v === true).length,
       };
 
       (nodes || []).forEach((n) => {
@@ -267,19 +275,24 @@ export const ConsensusProvider = ({ children }) => {
         1;
       const voteThreshold =
         config?.consensus?.voteThreshold || 2 / 3;
-      const requiredVotes = Math.ceil(totalNodes * voteThreshold);
+      const requiredVotes = Math.ceil(
+        totalNodes * voteThreshold
+      );
       normalized.prevoteThresholdMet =
         normalized.prevoteCount >= requiredVotes;
       normalized.precommitThresholdMet =
         normalized.precommitCount >= requiredVotes;
 
-      console.log("[UPDATE_CURRENT_ROUND_VOTES] normalized votingRound:", {
-        roundNumber: normalized.roundNumber,
-        prevoteCount: normalized.prevoteCount,
-        precommitCount: normalized.precommitCount,
-        prevotesReceived: normalized.prevotesReceived,
-        precommitsReceived: normalized.precommitsReceived,
-      });
+      console.log(
+        "[UPDATE_CURRENT_ROUND_VOTES] normalized votingRound:",
+        {
+          roundNumber: normalized.roundNumber,
+          prevoteCount: normalized.prevoteCount,
+          precommitCount: normalized.precommitCount,
+          prevotesReceived: normalized.prevotesReceived,
+          precommitsReceived: normalized.precommitsReceived,
+        }
+      );
 
       setCurrentRoundVotes(normalized);
     },
@@ -318,7 +331,8 @@ export const ConsensusProvider = ({ children }) => {
 
       setCurrentRoundVotes((cur) => {
         if (!cur) return null;
-        if (cur.roundNumber === normalized.roundNumber) return null;
+        if (cur.roundNumber === normalized.roundNumber)
+          return null;
         return cur;
       });
     },
@@ -419,12 +433,15 @@ export const ConsensusProvider = ({ children }) => {
 
       blocksArr.forEach((b, idx) => {
         const h = b?.height;
-        const hash = b?.hash ?? b?.blockHash ?? `${b?.height}-${idx}`;
+        const hash =
+          b?.hash ?? b?.blockHash ?? `${b?.height}-${idx}`;
         if (!h) return;
         const entry = byHeight.get(h) || { hashes: new Map() };
         const map = entry.hashes;
         if (!map.has(hash)) map.set(hash, []);
-        map.get(hash).push({ hash, proposer: b.proposer, index: idx });
+        map
+          .get(hash)
+          .push({ hash, proposer: b.proposer, index: idx });
         byHeight.set(h, entry);
       });
 
@@ -435,7 +452,9 @@ export const ConsensusProvider = ({ children }) => {
           violations.push({
             height,
             hashes: distinct,
-            blocks: distinct.map((h) => entry.hashes.get(h)).flat(),
+            blocks: distinct
+              .map((h) => entry.hashes.get(h))
+              .flat(),
             source: "blocks",
           });
         }
@@ -458,7 +477,8 @@ export const ConsensusProvider = ({ children }) => {
             r?.approved);
         if (!committed) return;
 
-        const height = r.roundHeight ?? r.roundNumber ?? r?.height;
+        const height =
+          r.roundHeight ?? r.roundNumber ?? r?.height;
         const hash =
           r.committedBlockHash ??
           r.blockHash ??
@@ -502,13 +522,16 @@ export const ConsensusProvider = ({ children }) => {
       const blocksResult = detectConflictingCommitsFromBlocks(
         blocks || []
       );
-      const historyResult = detectConflictingCommitsFromVotingHistory(
-        votingHistory || []
-      );
+      const historyResult =
+        detectConflictingCommitsFromVotingHistory(
+          votingHistory || []
+        );
 
       const merged = new Map();
       const pushViolation = (v) => {
-        const key = `${v.height}:${v.hashes.sort().join("|")}:${v.source}`;
+        const key = `${v.height}:${v.hashes.sort().join("|")}:${
+          v.source
+        }`;
         if (!merged.has(key)) merged.set(key, v);
       };
 
@@ -522,7 +545,9 @@ export const ConsensusProvider = ({ children }) => {
 
       if (!isConsistent) {
         addLog(
-          `Consistency violation detected: ${violations.length} conflicting height(s) — heights: ${violations
+          `Consistency violation detected: ${
+            violations.length
+          } conflicting height(s) — heights: ${violations
             .map((v) => v.height)
             .join(", ")}`,
           "error"
@@ -566,11 +591,24 @@ export const ConsensusProvider = ({ children }) => {
       );
       setTimeoutDuration(newTimeout);
       addLog(
-        `Round ${round} timeout! Escalating timeout to ${Math.round(newTimeout)}ms (${newConsecutiveTimeouts}${newConsecutiveTimeouts === 1 ? "st" : newConsecutiveTimeouts === 2 ? "nd" : newConsecutiveTimeouts === 3 ? "rd" : "th"} consecutive timeout)`,
+        `Round ${round} timeout! Escalating timeout to ${Math.round(
+          newTimeout
+        )}ms (${newConsecutiveTimeouts}${
+          newConsecutiveTimeouts === 1
+            ? "st"
+            : newConsecutiveTimeouts === 2
+            ? "nd"
+            : newConsecutiveTimeouts === 3
+            ? "rd"
+            : "th"
+        } consecutive timeout)`,
         "warning"
       );
     } else {
-      addLog(`Round ${round} timeout! Moving to next proposer`, "warning");
+      addLog(
+        `Round ${round} timeout! Moving to next proposer`,
+        "warning"
+      );
     }
 
     setRoundStartTime(Date.now());
@@ -612,7 +650,9 @@ export const ConsensusProvider = ({ children }) => {
   };
 
   const resetNetwork = () => {
-    setNodes(initializeNetwork(config.network.nodeCount, config));
+    setNodes(
+      initializeNetwork(config.network.nodeCount, config)
+    );
     setBlocks([]);
     setRound(0);
     setLiveness(true);
@@ -642,15 +682,19 @@ export const ConsensusProvider = ({ children }) => {
 
   const loadNewConfig = (newConfig) => {
     setConfig(newConfig);
-    const newBaseTimeout = newConfig.consensus.roundTimeout || 5000;
-    const newMultiplier = newConfig.consensus.timeoutMultiplier || 1.5;
+    const newBaseTimeout =
+      newConfig.consensus.roundTimeout || 5000;
+    const newMultiplier =
+      newConfig.consensus.timeoutMultiplier || 1.5;
     const newEscalation =
       newConfig.consensus.timeoutEscalationEnabled !== false;
     setBaseTimeoutDuration(newBaseTimeout);
     setTimeoutDuration(newBaseTimeout);
     setTimeoutMultiplier(newMultiplier);
     setTimeoutEscalationEnabled(newEscalation);
-    setNodes(initializeNetwork(newConfig.network.nodeCount, newConfig));
+    setNodes(
+      initializeNetwork(newConfig.network.nodeCount, newConfig)
+    );
     setBlocks([]);
     setRound(0);
     setLiveness(true);
@@ -663,16 +707,24 @@ export const ConsensusProvider = ({ children }) => {
     setConsecutiveTimeouts(0);
     setTimeoutHistory([]);
     setCurrentProposer(null);
-    addLog(`Configuration "${newConfig.name}" applied`, "success");
+    addLog(
+      `Configuration "${newConfig.name}" applied`,
+      "success"
+    );
   };
 
   const changeSpeed = (newSpeed) => {
     setSpeed(newSpeed);
   };
 
-  const updateTimeoutSettings = (duration, multiplier, escalationEnabled) => {
+  const updateTimeoutSettings = (
+    duration,
+    multiplier,
+    escalationEnabled
+  ) => {
     if (duration !== undefined) setTimeoutDuration(duration);
-    if (multiplier !== undefined) setTimeoutMultiplier(multiplier);
+    if (multiplier !== undefined)
+      setTimeoutMultiplier(multiplier);
     if (escalationEnabled !== undefined)
       setTimeoutEscalationEnabled(escalationEnabled);
   };
@@ -685,7 +737,9 @@ export const ConsensusProvider = ({ children }) => {
       if (isRunning) setIsRunning(false);
       setCurrentStep(0);
       setStepModeRound(0);
-      setStepDescription("Round Start - Ready to begin consensus");
+      setStepDescription(
+        "Round Start - Ready to begin consensus"
+      );
       addLog("Switched to Step-by-Step Mode", "info");
     } else {
       setCurrentStep(0);
@@ -732,7 +786,12 @@ export const ConsensusProvider = ({ children }) => {
     setStepDescription("Round Start - Ready to begin consensus");
     setStepState(null);
     setHighlightedNodes([]);
-    addLog(`Starting Round ${stepModeRound + (currentStep > 0 ? 1 : 0)}`, "info");
+    addLog(
+      `Starting Round ${
+        stepModeRound + (currentStep > 0 ? 1 : 0)
+      }`,
+      "info"
+    );
   };
 
   const toggleAutoPlaySteps = () => {
@@ -803,7 +862,16 @@ export const ConsensusProvider = ({ children }) => {
       });
 
       // Debugging
-      console.log("[SIM_STEP] round=", round, "timedOut=", timedOut, "newBlock=", !!newBlock, "newProposer=", newProposer?.id ?? newProposer);
+      console.log(
+        "[SIM_STEP] round=",
+        round,
+        "timedOut=",
+        timedOut,
+        "newBlock=",
+        !!newBlock,
+        "newProposer=",
+        newProposer?.id ?? newProposer
+      );
       if (votingRound) {
         console.log("[SIM_STEP] votingRound:", {
           roundNumber: votingRound.roundNumber,
@@ -811,7 +879,8 @@ export const ConsensusProvider = ({ children }) => {
           prevoteThresholdMet: votingRound.prevoteThresholdMet,
           prevotesReceived: votingRound.prevotesReceived,
           precommitCount: votingRound.precommitCount,
-          precommitThresholdMet: votingRound.precommitThresholdMet,
+          precommitThresholdMet:
+            votingRound.precommitThresholdMet,
           precommitsReceived: votingRound.precommitsReceived,
         });
       }
@@ -822,16 +891,35 @@ export const ConsensusProvider = ({ children }) => {
 
       if (newBlock) {
         setBlocks((prev) => [...prev, newBlock]);
-        addLog(`Block #${newBlock.height} proposed by Node ${newBlock.proposer}`, "block");
+        addLog(
+          `Block #${newBlock.height} proposed by Node ${newBlock.proposer}`,
+          "block"
+        );
 
         if (votingRound) {
           addLog(
-            `Prevotes: ${votingRound.prevoteCount}/${Object.keys(votingRound.prevotesReceived || {}).length} (Threshold ${votingRound.prevoteThresholdMet ? "MET" : "NOT MET"})`,
-            votingRound.prevoteThresholdMet ? "success" : "warning"
+            `Prevotes: ${votingRound.prevoteCount}/${
+              Object.keys(votingRound.prevotesReceived || {})
+                .length
+            } (Threshold ${
+              votingRound.prevoteThresholdMet ? "MET" : "NOT MET"
+            })`,
+            votingRound.prevoteThresholdMet
+              ? "success"
+              : "warning"
           );
           addLog(
-            `Precommits: ${votingRound.precommitCount}/${Object.keys(votingRound.precommitsReceived || {}).length} (Threshold ${votingRound.precommitThresholdMet ? "MET" : "NOT MET"})`,
-            votingRound.precommitThresholdMet ? "success" : "warning"
+            `Precommits: ${votingRound.precommitCount}/${
+              Object.keys(votingRound.precommitsReceived || {})
+                .length
+            } (Threshold ${
+              votingRound.precommitThresholdMet
+                ? "MET"
+                : "NOT MET"
+            })`,
+            votingRound.precommitThresholdMet
+              ? "success"
+              : "warning"
           );
         }
 
@@ -843,14 +931,19 @@ export const ConsensusProvider = ({ children }) => {
         // Round completed without commit and without hitting timeout.
         // Reset the round start time so the next round starts with a fresh timer.
         setRoundStartTime(Date.now());
-        addLog(`Round ${round} finished (no commit). Timer reset for next round.`, "info");
+        addLog(
+          `Round ${round} finished (no commit). Timer reset for next round.`,
+          "info"
+        );
       }
 
       setRound((prev) => prev + 1);
 
       if (newLiveness !== liveness) {
         addLog(
-          `Liveness ${newLiveness ? "✓ Confirmed" : "✗ Violated"}`,
+          `Liveness ${
+            newLiveness ? "✓ Confirmed" : "✗ Violated"
+          }`,
           newLiveness ? "success" : "error"
         );
         setLiveness(newLiveness);
@@ -870,7 +963,9 @@ export const ConsensusProvider = ({ children }) => {
 
       if (config.simulation.logLevel !== "minimal") {
         addLog(
-          `Round ${Math.floor(Date.now() / 1000)}: Consensus step executed`,
+          `Round ${Math.floor(
+            Date.now() / 1000
+          )}: Consensus step executed`,
           "info"
         );
       }

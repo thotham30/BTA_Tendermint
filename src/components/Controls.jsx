@@ -323,7 +323,7 @@ export default function Controls() {
               <input
                 type="range"
                 min="1000"
-                max="10000"
+                max="20000"
                 step="500"
                 value={localTimeout}
                 onChange={(e) =>

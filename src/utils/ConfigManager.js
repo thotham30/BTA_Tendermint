@@ -68,7 +68,7 @@ export const DEFAULT_CONFIG = {
     messageTimeout: 5000, // ms
   },
   consensus: {
-    roundTimeout: 5000, // ms
+    roundTimeout: 15000, // ms
     voteThreshold: (2 / 3).toFixed(2), // 2/3+ majority
     blockSize: 10, // transactions per block
     proposalDelay: 100, // ms
