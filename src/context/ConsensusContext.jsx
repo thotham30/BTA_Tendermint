@@ -9,7 +9,7 @@ import React, {
 import {
   initializeNetwork,
   simulateConsensusStep,
-} from "../utils/networkSimulation";
+} from "../utils/NetworkSimulation";
 import {
   loadConfig,
   DEFAULT_CONFIG,
