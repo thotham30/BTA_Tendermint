@@ -240,10 +240,10 @@ export function validateConfig(config) {
   // Consensus validation
   if (
     consensus.roundTimeout < 1000 ||
-    consensus.roundTimeout > 10000
+    consensus.roundTimeout > 20000
   ) {
     errors.push(
-      "Round timeout must be between 1000 and 10000ms"
+      "Round timeout must be between 1000 and 20000ms"
     );
   }
   if (
