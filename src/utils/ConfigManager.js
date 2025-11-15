@@ -278,6 +278,42 @@ export const PRESET_CONFIGS = {
       logLevel: "normal",
     },
   },
+  graphRoutingDemo: {
+    name: "Graph Routing Demo",
+    network: {
+      nodeCount: 7,
+      latency: 100,
+      packetLoss: 0,
+      messageTimeout: 5000,
+      topology: {
+        type: "ring", // Ring topology with graph routing enabled
+        edgeProbability: 0.4,
+        nodeDegree: 3,
+        useGraphRouting: true, // Graph-based routing enabled!
+      },
+      edges: [],
+    },
+    consensus: {
+      roundTimeout: 8000, // Longer timeout for multi-hop propagation
+      voteThreshold: (2 / 3).toFixed(2),
+      blockSize: 10,
+      proposalDelay: 100,
+      timeoutMultiplier: 1.5,
+      timeoutEscalationEnabled: true,
+    },
+    nodeBehavior: {
+      byzantineCount: 0, // Start with no Byzantine for clearer demo
+      byzantineType: "faulty",
+      downtimePercentage: 0,
+      responseVariance: 50,
+    },
+    simulation: {
+      transactionRate: "medium",
+      transactionPoolSize: 50,
+      durationLimit: "off",
+      logLevel: "normal",
+    },
+  },
 };
 
 /**

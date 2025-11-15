@@ -556,6 +556,7 @@ export function executeConsensusStep(
           ...n,
           state: "Idle",
           color: n.isByzantine ? "#ff6b6b" : "#ccc",
+          round: round, // Update node's round at start
         })),
       };
     }
@@ -779,6 +780,7 @@ export function executeConsensusStep(
             : n.isByzantine
             ? "#ff6b6b"
             : "#f94144",
+          round: round, // Update node's round at commit
         })),
       };
     }

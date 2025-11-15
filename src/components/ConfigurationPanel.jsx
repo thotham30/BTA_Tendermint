@@ -145,6 +145,12 @@ export default function ConfigurationPanel({
             >
               Partition Test
             </button>
+            <button
+              onClick={() => handlePreset("graphRoutingDemo")}
+              style={{ backgroundColor: "#3b82f6" }}
+            >
+              Graph Routing
+            </button>
           </div>
         </div>
 
@@ -267,6 +273,177 @@ export default function ConfigurationPanel({
                   }
                 />
               </div>
+
+              <div className="config-divider"></div>
+              <h4 className="config-subsection">
+                Network Topology
+              </h4>
+
+              <div className="config-field">
+                <label>
+                  Topology Type
+                  <span className="field-desc">
+                    Network connection structure
+                  </span>
+                </label>
+                <select
+                  value={
+                    config.network.topology?.type || "full-mesh"
+                  }
+                  onChange={(e) =>
+                    setConfig((prev) => ({
+                      ...prev,
+                      network: {
+                        ...prev.network,
+                        topology: {
+                          ...prev.network.topology,
+                          type: e.target.value,
+                        },
+                      },
+                    }))
+                  }
+                >
+                  <option value="full-mesh">
+                    Full Mesh (All connected)
+                  </option>
+                  <option value="ring">
+                    Ring (Circular chain)
+                  </option>
+                  <option value="star">
+                    Star (Hub and spoke)
+                  </option>
+                  <option value="line">
+                    Line (Sequential chain)
+                  </option>
+                  <option value="random">
+                    Random (Probability-based)
+                  </option>
+                  <option value="random-degree">
+                    Random Degree (Fixed connections)
+                  </option>
+                </select>
+              </div>
+
+              <div className="config-field">
+                <label className="checkbox-label">
+                  <input
+                    type="checkbox"
+                    checked={
+                      config.network.topology?.useGraphRouting ||
+                      false
+                    }
+                    onChange={(e) =>
+                      setConfig((prev) => ({
+                        ...prev,
+                        network: {
+                          ...prev.network,
+                          topology: {
+                            ...prev.network.topology,
+                            useGraphRouting: e.target.checked,
+                          },
+                        },
+                      }))
+                    }
+                  />
+                  <span>Enable Graph-Based Routing</span>
+                </label>
+                <span className="field-desc">
+                  When enabled, messages only travel along edges
+                  (partial connectivity). When disabled, all
+                  nodes can communicate directly (broadcast
+                  mode).
+                </span>
+              </div>
+
+              {config.network.topology?.type === "random" && (
+                <div className="config-field">
+                  <label>
+                    Edge Probability
+                    <span className="field-desc">
+                      Probability of connection between any two
+                      nodes (0-1)
+                    </span>
+                  </label>
+                  <input
+                    type="range"
+                    min="0"
+                    max="1"
+                    step="0.05"
+                    value={
+                      config.network.topology?.edgeProbability ||
+                      0.3
+                    }
+                    onChange={(e) =>
+                      setConfig((prev) => ({
+                        ...prev,
+                        network: {
+                          ...prev.network,
+                          topology: {
+                            ...prev.network.topology,
+                            edgeProbability: parseFloat(
+                              e.target.value
+                            ),
+                          },
+                        },
+                      }))
+                    }
+                  />
+                  <span className="range-value">
+                    {(
+                      (config.network.topology
+                        ?.edgeProbability || 0.3) * 100
+                    ).toFixed(0)}
+                    %
+                  </span>
+                </div>
+              )}
+
+              {config.network.topology?.type ===
+                "random-degree" && (
+                <div className="config-field">
+                  <label>
+                    Node Degree
+                    <span className="field-desc">
+                      Number of connections per node (1-10)
+                    </span>
+                  </label>
+                  <input
+                    type="number"
+                    min="1"
+                    max="10"
+                    value={
+                      config.network.topology?.nodeDegree || 2
+                    }
+                    onChange={(e) =>
+                      setConfig((prev) => ({
+                        ...prev,
+                        network: {
+                          ...prev.network,
+                          topology: {
+                            ...prev.network.topology,
+                            nodeDegree: parseInt(e.target.value),
+                          },
+                        },
+                      }))
+                    }
+                  />
+                </div>
+              )}
+
+              {config.network.topology?.useGraphRouting &&
+                config.network.topology?.type !==
+                  "full-mesh" && (
+                  <div
+                    className="alert alert-info"
+                    style={{ marginTop: "10px" }}
+                  >
+                    <strong>Graph Routing Enabled:</strong>{" "}
+                    Messages will only propagate along{" "}
+                    {config.network.topology.type} topology
+                    edges. Isolated nodes cannot participate in
+                    consensus.
+                  </div>
+                )}
             </div>
           )}
 

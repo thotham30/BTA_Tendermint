@@ -190,6 +190,8 @@ export function simulateConsensusStep(
       if (n.isOnline && !n.isPartitioned) {
         n.state = "Timeout";
         n.color = n.isByzantine ? "#ff6b6b" : "#f94144";
+        // Update round even on timeout - nodes advance to next round
+        n.round = round;
       }
     });
 
@@ -200,7 +202,12 @@ export function simulateConsensusStep(
       newSafety: true,
       votingRound: null,
       timedOut: true,
-      newProposer: getNextProposer(updatedNodes, round + 1),
+      newProposer: getNextProposer(
+        updatedNodes,
+        round + 1,
+        edges,
+        useGraphRouting
+      ),
     };
   }
 
@@ -513,6 +520,15 @@ export function simulateConsensusStep(
       }
     });
   }
+
+  // Update node rounds for all participating nodes
+  updatedNodes.forEach((n) => {
+    // Update round for online, non-partitioned nodes that participated
+    if (n.isOnline && !n.isPartitioned) {
+      n.round = round;
+    }
+    // Byzantine nodes and offline nodes don't update their round
+  });
 
   // Update consensus context
   if (consensusContext?.updateCurrentRoundVotes) {
