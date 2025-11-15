@@ -164,6 +164,31 @@ export default function StateInspector() {
         </div>
       </div>
 
+      {/* Per-Node Round Status (for graph routing) */}
+      {nodes.some((n) => n.round !== undefined) && (
+        <div className="inspector-section">
+          <h4>🔄 Individual Node Rounds</h4>
+          <div className="node-rounds-grid">
+            {nodes.map((node) => (
+              <div
+                key={node.id}
+                className={`node-round-item ${
+                  node.isByzantine ? "byzantine" : ""
+                } ${!node.isOnline ? "offline" : ""}`}
+                title={`Node ${node.id} - Round ${
+                  node.round ?? 0
+                }`}
+              >
+                <span className="node-round-id">N{node.id}</span>
+                <span className="node-round-value">
+                  R{node.round ?? 0}
+                </span>
+              </div>
+            ))}
+          </div>
+        </div>
+      )}
+
       {/* Prevote Statistics */}
       {prevoteStats && currentStep >= 2 && (
         <div className="inspector-section">

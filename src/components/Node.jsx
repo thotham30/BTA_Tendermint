@@ -84,14 +84,23 @@ export default function Node({ node, isHighlighted = false }) {
       whileHover={{ scale: 1.1 }}
       title={
         isPartitioned
-          ? `Node ${id} - Partitioned (disconnected from network)`
+          ? `Node ${id} - Partitioned (disconnected from network) - Round ${
+              node.round ?? 0
+            }`
           : node.isByzantine
-          ? `Node ${id} - Byzantine: ${node.byzantineType}`
-          : `Node ${id} - ${state}`
+          ? `Node ${id} - Byzantine: ${
+              node.byzantineType
+            } - Round ${node.round ?? 0}`
+          : `Node ${id} - ${state} - Round ${node.round ?? 0}`
       }
     >
       <div className="node-id">Node {id}</div>
       <div className="node-state">{state}</div>
+      {node.round !== undefined && (
+        <div className="node-round" title="Current round">
+          R{node.round}
+        </div>
+      )}
       {renderVoteBadge()}
 
       {/* Partition indicator - highest priority */}

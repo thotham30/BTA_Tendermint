@@ -81,6 +81,9 @@ export function initializeNetwork(nodeCount, config) {
       position: positions[nodeId] || { x: 400, y: 300 },
       inbox: [],
       outbox: [],
+
+      // Per-node consensus tracking
+      round: 0, // Track individual node's round
     };
   });
 

@@ -57,6 +57,21 @@
   font-size: 0.8rem;
 }
 
+.node-round {
+  position: absolute;
+  top: -8px;
+  left: 50%;
+  transform: translateX(-50%);
+  background: linear-gradient(135deg, #3b82f6, #2563eb);
+  color: white;
+  padding: 2px 8px;
+  border-radius: 10px;
+  font-size: 0.7rem;
+  font-weight: bold;
+  box-shadow: 0 2px 6px rgba(59, 130, 246, 0.4);
+  z-index: 5;
+}
+
 /* Timeout Visualizer */
 .timeout-section {
   margin: 20px 0;
