@@ -1,5 +1,6 @@
 import React from "react";
 import { useConsensus } from "../context/ConsensusContext";
+import QuorumCertificateViewer from "./QuorumCertificateViewer";
 
 export default function VotingBreakdown() {
   const { currentRoundVotes, nodes, config } = useConsensus();
@@ -158,6 +159,15 @@ export default function VotingBreakdown() {
         </div>
       </div>
 
+      {/* Prevote QC Display */}
+      {currentRoundVotes.prevoteQC && (
+        <QuorumCertificateViewer
+          qc={currentRoundVotes.prevoteQC}
+          stage="prevote"
+          compact={true}
+        />
+      )}
+
       {/* Precommit Phase */}
       <div className="voting-phase">
         <div className="phase-header">
@@ -234,6 +244,15 @@ export default function VotingBreakdown() {
           })}
         </div>
       </div>
+
+      {/* Precommit QC Display */}
+      {currentRoundVotes.precommitQC && (
+        <QuorumCertificateViewer
+          qc={currentRoundVotes.precommitQC}
+          stage="precommit"
+          compact={true}
+        />
+      )}
 
       <div className="voting-threshold-info">
         <p>

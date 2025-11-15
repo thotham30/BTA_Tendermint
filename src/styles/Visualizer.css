@@ -19,8 +19,8 @@
 }
 
 .node {
-  width: 100px;
-  height: 100px;
+  /* width: 100px; */
+  /* height: 100px; */
   border-radius: 12px;
   display: flex;
   flex-direction: column;

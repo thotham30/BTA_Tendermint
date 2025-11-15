@@ -15,6 +15,8 @@ export default function StepByStepControls() {
     config,
     stepState,
     stepModeRound,
+    edges,
+    useGraphRouting,
     nextStep,
     previousStep,
     goToRoundStart,
@@ -41,7 +43,8 @@ export default function StepByStepControls() {
       blocks,
       config,
       stepState,
-      stepModeRound
+      stepModeRound,
+      { edges, useGraphRouting }
     );
 
     updateStepState(result.stepState);

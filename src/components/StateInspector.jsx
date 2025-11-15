@@ -4,6 +4,7 @@ import {
   DEFAULTS,
   formatVoteThreshold,
 } from "../utils/ConfigManager";
+import QuorumCertificateViewer from "./QuorumCertificateViewer";
 
 export default function StateInspector() {
   const {
@@ -204,6 +205,18 @@ export default function StateInspector() {
         </div>
       )}
 
+      {/* Prevote QC Status */}
+      {stepState.votingRound?.prevoteQC && currentStep >= 3 && (
+        <div className="inspector-section">
+          <h4>📜 Prevote QC Generated</h4>
+          <QuorumCertificateViewer
+            qc={stepState.votingRound.prevoteQC}
+            stage="prevote"
+            compact={true}
+          />
+        </div>
+      )}
+
       {/* Precommit Statistics */}
       {precommitStats && currentStep >= 4 && (
         <div className="inspector-section">
@@ -246,6 +259,19 @@ export default function StateInspector() {
           </div>
         </div>
       )}
+
+      {/* Precommit QC Status */}
+      {stepState.votingRound?.precommitQC &&
+        currentStep >= 5 && (
+          <div className="inspector-section">
+            <h4>🔒 Precommit QC Generated (Commit Proof)</h4>
+            <QuorumCertificateViewer
+              qc={stepState.votingRound.precommitQC}
+              stage="precommit"
+              compact={true}
+            />
+          </div>
+        )}
 
       {/* Commit Status */}
       {currentStep >= 6 && stepState.committed !== undefined && (

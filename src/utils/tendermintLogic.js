@@ -1,5 +1,7 @@
 // src/utils/tendermintLogic.js
 import { DEFAULTS } from "./ConfigManager";
+import { getReachableNodes, isReachable } from "./GraphTopology";
+import { floodMessage } from "./MessageQueue";
 
 /**
  * Consensus Step Definitions
@@ -77,14 +79,51 @@ export function recordProposalEvidence(proposal) {
 }
 
 /**
- * getNextProposer(nodes, round)
- * Round-robin proposer selection among online nodes (including Byzantine)
+ * getNextProposer(nodes, round, edges = null, useGraphRouting = false)
+ * Round-robin proposer selection among online nodes
+ *
+ * If useGraphRouting is true, also checks if proposer can reach enough nodes for consensus
  */
-export function getNextProposer(nodes, round) {
+export function getNextProposer(
+  nodes,
+  round,
+  edges = null,
+  useGraphRouting = false
+) {
   const onlineNodes = nodes.filter((n) => n.isOnline);
   if (onlineNodes.length === 0) {
     return nodes[round % nodes.length];
   }
+
+  // If not using graph routing, use simple round-robin
+  if (!useGraphRouting || !edges || edges.length === 0) {
+    return onlineNodes[round % onlineNodes.length];
+  }
+
+  // Graph routing: Find proposer that can reach enough nodes for consensus
+  const requiredNodes = Math.ceil(nodes.length * (2 / 3));
+
+  // Try round-robin, but skip if proposer can't reach quorum
+  for (let i = 0; i < onlineNodes.length; i++) {
+    const candidateIndex = (round + i) % onlineNodes.length;
+    const candidate = onlineNodes[candidateIndex];
+
+    // Check how many nodes this candidate can reach
+    const reachable = getReachableNodes(candidate.id, edges);
+    const reachableOnline = Array.from(reachable).filter(
+      (nodeId) => {
+        const node = nodes.find((n) => n.id === nodeId);
+        return node && node.isOnline;
+      }
+    );
+
+    // If candidate can reach enough nodes, select them
+    if (reachableOnline.length >= requiredNodes) {
+      return candidate;
+    }
+  }
+
+  // Fallback: return round-robin even if can't reach quorum (will fail later)
   return onlineNodes[round % onlineNodes.length];
 }
 
@@ -143,19 +182,27 @@ export function createBlock(
 }
 
 /**
- * voteOnBlock(nodes, block, config, totalValidators = null)
+ * voteOnBlock(nodes, block, config, totalValidators = null, options = {})
  *
  * - nodes: array of node objects considered "votable" (e.g., online subset)
  * - totalValidators: optional canonical denominator (full validator set) to compute approval.
+ * - options: { edges, useGraphRouting, proposerId } for graph-based voting
  *
- * Returns { votes, yesVotes, totalVotes, approved, byzantineDetected }
+ * Returns { votes, yesVotes, totalVotes, approved, byzantineDetected, reachableNodes }
  */
 export function voteOnBlock(
   nodes,
   block,
   config,
-  totalValidators = null
+  totalValidators = null,
+  options = {}
 ) {
+  const {
+    edges = null,
+    useGraphRouting = false,
+    proposerId = null,
+  } = options;
+
   const voteThreshold =
     config?.consensus?.voteThreshold || DEFAULTS.voteThreshold;
   const responseVariance =
@@ -163,8 +210,25 @@ export function voteOnBlock(
     DEFAULTS.responseVariance;
 
   let byzantineDetected = false;
+  let reachableNodes = new Set(nodes.map((n) => n.id));
 
-  const votes = nodes.map((node) => {
+  // If using graph routing, filter nodes by reachability from proposer
+  let votableNodes = nodes;
+  if (
+    useGraphRouting &&
+    edges &&
+    edges.length > 0 &&
+    proposerId
+  ) {
+    reachableNodes = getReachableNodes(proposerId, edges);
+
+    // Only nodes reachable from proposer can vote (they received the proposal)
+    votableNodes = nodes.filter((node) =>
+      reachableNodes.has(node.id)
+    );
+  }
+
+  const votes = votableNodes.map((node) => {
     // Offline -> no vote
     if (!node.isOnline) {
       return { nodeId: node.id, vote: null, isByzantine: false };
@@ -219,9 +283,19 @@ export function voteOnBlock(
   const yesVotes = votes.filter((v) => v.vote === true).length;
   const votedNodesCount = votes.length;
 
-  // Denominator: prefer explicit totalValidators (full validator set)
-  const denominator =
-    totalValidators !== null ? totalValidators : votedNodesCount;
+  // Denominator calculation depends on routing mode
+  let denominator;
+  if (useGraphRouting && edges && edges.length > 0) {
+    // In graph mode, threshold is based on reachable nodes
+    denominator = reachableNodes.size;
+  } else {
+    // In broadcast mode, use total validators
+    denominator =
+      totalValidators !== null
+        ? totalValidators
+        : votedNodesCount;
+  }
+
   const approved =
     denominator > 0 && yesVotes / denominator >= voteThreshold;
 
@@ -231,6 +305,89 @@ export function voteOnBlock(
     totalVotes: votedNodesCount,
     approved,
     byzantineDetected,
+    reachableNodes: Array.from(reachableNodes),
+    denominator,
+  };
+}
+
+/**
+ * generateSimulatedSignature(nodeId, blockHash, stage)
+ * Generate a simulated cryptographic signature for QC
+ */
+function generateSimulatedSignature(nodeId, blockHash, stage) {
+  const nonce = Math.random().toString(36).substring(2, 8);
+  return `SIG_${nodeId}_${blockHash.slice(
+    0,
+    4
+  )}_${stage}_${nonce}`;
+}
+
+/**
+ * generateQuorumCertificate(stage, votingRound, block, voteThreshold)
+ * Generate a Quorum Certificate from voting results
+ *
+ * @param {string} stage - "prevote" or "precommit"
+ * @param {object} votingRound - Current voting round object
+ * @param {object} block - Block being voted on
+ * @param {number} voteThreshold - Required threshold (e.g., 0.6667)
+ * @returns {QuorumCertificate | null}
+ */
+export function generateQuorumCertificate(
+  stage,
+  votingRound,
+  block,
+  voteThreshold
+) {
+  if (!votingRound || !block) return null;
+
+  const votesReceived =
+    stage === "prevote"
+      ? votingRound.prevotesReceived
+      : votingRound.precommitsReceived;
+
+  const thresholdMet =
+    stage === "prevote"
+      ? votingRound.prevoteThresholdMet
+      : votingRound.precommitThresholdMet;
+
+  // Only generate QC if threshold met
+  if (!thresholdMet) return null;
+
+  // Collect signatures from yes votes
+  const signatures = [];
+  Object.entries(votesReceived).forEach(([nodeId, vote]) => {
+    if (vote === true) {
+      signatures.push({
+        nodeId: parseInt(nodeId),
+        vote: vote,
+        signature: generateSimulatedSignature(
+          nodeId,
+          block.hash,
+          stage
+        ),
+        timestamp: Date.now(),
+      });
+    }
+  });
+
+  return {
+    height: votingRound.roundHeight,
+    round: votingRound.roundNumber,
+    stage: stage,
+    blockHash: block.hash,
+    signatures: signatures,
+    totalValidators: Object.keys(votesReceived).length,
+    signatureCount: signatures.length,
+    thresholdMet: thresholdMet,
+    threshold: voteThreshold,
+    proposer: block.proposer,
+    createdAt: Date.now(),
+    blockReference: {
+      height: block.height,
+      hash: block.hash,
+      proposer: block.proposer,
+      txCount: block.txCount,
+    },
   };
 }
 
@@ -265,16 +422,19 @@ export function createVotingRound(
     precommitCount: 0,
     prevoteThresholdMet: false,
     precommitThresholdMet: false,
+    prevoteQC: null,
+    precommitQC: null,
   };
 }
 
 /**
- * updatePrevotes(votingRound, votes, voteThreshold)
+ * updatePrevotes(votingRound, votes, voteThreshold, block)
  */
 export function updatePrevotes(
   votingRound,
   votes,
-  voteThreshold
+  voteThreshold,
+  block = null
 ) {
   votes.forEach(({ nodeId, vote }) => {
     votingRound.prevotesReceived[nodeId] = vote;
@@ -288,16 +448,31 @@ export function updatePrevotes(
   votingRound.prevoteThresholdMet =
     totalNodes > 0 && yesPrevotes / totalNodes >= voteThreshold;
 
+  // Generate QC if threshold met and block is provided
+  if (
+    votingRound.prevoteThresholdMet &&
+    !votingRound.prevoteQC &&
+    block
+  ) {
+    votingRound.prevoteQC = generateQuorumCertificate(
+      "prevote",
+      votingRound,
+      block,
+      voteThreshold
+    );
+  }
+
   return votingRound;
 }
 
 /**
- * updatePrecommits(votingRound, votes, voteThreshold)
+ * updatePrecommits(votingRound, votes, voteThreshold, block)
  */
 export function updatePrecommits(
   votingRound,
   votes,
-  voteThreshold
+  voteThreshold,
+  block = null
 ) {
   votes.forEach(({ nodeId, vote }) => {
     votingRound.precommitsReceived[nodeId] = vote;
@@ -314,6 +489,20 @@ export function updatePrecommits(
     totalNodes > 0 &&
     yesPrecommits / totalNodes >= voteThreshold;
 
+  // Generate QC if threshold met and block is provided
+  if (
+    votingRound.precommitThresholdMet &&
+    !votingRound.precommitQC &&
+    block
+  ) {
+    votingRound.precommitQC = generateQuorumCertificate(
+      "precommit",
+      votingRound,
+      block,
+      voteThreshold
+    );
+  }
+
   return votingRound;
 }
 
@@ -326,9 +515,10 @@ export function finalizeVotingRound(votingRound, approved) {
 }
 
 /**
- * executeConsensusStep(step, nodes, blocks, config, previousStepState = null, customRound = null)
+ * executeConsensusStep(step, nodes, blocks, config, previousStepState = null, customRound = null, options = {})
  *
  * Small step-machine exposing internal step states for step-by-step mode.
+ * options: { edges, useGraphRouting } for graph-based routing
  */
 export function executeConsensusStep(
   step,
@@ -336,8 +526,10 @@ export function executeConsensusStep(
   blocks,
   config,
   previousStepState = null,
-  customRound = null
+  customRound = null,
+  options = {}
 ) {
+  const { edges = null, useGraphRouting = false } = options;
   const round =
     customRound !== null ? customRound : blocks.length;
   const voteThreshold =
@@ -345,7 +537,12 @@ export function executeConsensusStep(
 
   switch (step) {
     case CONSENSUS_STEPS.ROUND_START: {
-      const proposer = getNextProposer(nodes, round);
+      const proposer = getNextProposer(
+        nodes,
+        round,
+        edges,
+        useGraphRouting
+      );
       return {
         step: CONSENSUS_STEPS.ROUND_START,
         description:
@@ -366,7 +563,7 @@ export function executeConsensusStep(
     case CONSENSUS_STEPS.BLOCK_PROPOSAL: {
       const proposer =
         previousStepState?.proposer ||
-        getNextProposer(nodes, round);
+        getNextProposer(nodes, round, edges, useGraphRouting);
       const block = createBlock(
         proposer.id,
         round + 1,
@@ -403,18 +600,20 @@ export function executeConsensusStep(
 
     case CONSENSUS_STEPS.PREVOTE: {
       const { block, votingRound, proposer } = previousStepState;
-      // Simple prevote using all nodes as "votable" (simulate synchronous voting)
+      // Prevote with graph routing support
       const prevoteResult = voteOnBlock(
         nodes,
         block,
         config,
         Object.keys(votingRound.prevotesReceived).length ||
-          nodes.length
+          nodes.length,
+        { edges, useGraphRouting, proposerId: proposer.id }
       );
       updatePrevotes(
         votingRound,
         prevoteResult.votes,
-        voteThreshold
+        voteThreshold,
+        block
       );
       return {
         step: CONSENSUS_STEPS.PREVOTE,
@@ -464,12 +663,14 @@ export function executeConsensusStep(
           block,
           config,
           Object.keys(votingRound.precommitsReceived).length ||
-            nodes.length
+            nodes.length,
+          { edges, useGraphRouting, proposerId: proposer.id }
         );
         updatePrecommits(
           votingRound,
           precommitResult.votes,
-          voteThreshold
+          voteThreshold,
+          block
         );
       } else {
         precommitResult = {

@@ -93,6 +93,9 @@ export const ConsensusProvider = ({ children }) => {
   const [isSynchronousMode, setIsSynchronousMode] =
     useState(true);
 
+  // Quorum Certificate State
+  const [qcHistory, setQcHistory] = useState([]);
+
   // Consistency checker state
   const [consistencyMaintained, setConsistencyMaintained] =
     useState(true);
@@ -313,6 +316,17 @@ export const ConsensusProvider = ({ children }) => {
         ),
       };
 
+      // Add QCs to history if they exist
+      if (normalized.prevoteQC) {
+        setQcHistory((prev) => [...prev, normalized.prevoteQC]);
+      }
+      if (normalized.precommitQC) {
+        setQcHistory((prev) => [
+          ...prev,
+          normalized.precommitQC,
+        ]);
+      }
+
       setVotingHistory((prev) => {
         const roundExists = prev.some(
           (vr) =>
@@ -338,6 +352,12 @@ export const ConsensusProvider = ({ children }) => {
     },
     [normalizeMapKeys]
   );
+
+  // Add QC to history
+  const addQC = useCallback((qc) => {
+    if (!qc) return;
+    setQcHistory((prev) => [...prev, qc]);
+  }, []);
 
   // --------------------------
   // Partition & network helpers
@@ -1038,6 +1058,8 @@ export const ConsensusProvider = ({ children }) => {
         // Consistency checker
         consistencyMaintained,
         consistencyViolations,
+        // Quorum Certificate state
+        qcHistory,
         // Control functions
         startConsensus,
         stopConsensus,
@@ -1048,6 +1070,7 @@ export const ConsensusProvider = ({ children }) => {
         trackVote,
         updateCurrentRoundVotes,
         finalizeRound,
+        addQC,
         toggleVotingDetails,
         toggleVotingHistory,
         selectRoundForDetails,

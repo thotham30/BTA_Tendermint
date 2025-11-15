@@ -1,5 +1,6 @@
 import React from "react";
 import { useConsensus } from "../context/ConsensusContext";
+import QuorumCertificateViewer from "./QuorumCertificateViewer";
 
 export default function VotingDetails() {
   const {
@@ -238,6 +239,17 @@ export default function VotingDetails() {
             </div>
           </div>
 
+          {/* Prevote QC */}
+          {round.prevoteQC && (
+            <div className="details-section">
+              <h3>Prevote Quorum Certificate</h3>
+              <QuorumCertificateViewer
+                qc={round.prevoteQC}
+                stage="prevote"
+              />
+            </div>
+          )}
+
           {/* Precommit Phase */}
           <div className="details-section">
             <h3>
@@ -289,6 +301,19 @@ export default function VotingDetails() {
               %)
             </div>
           </div>
+
+          {/* Precommit QC */}
+          {round.precommitQC && (
+            <div className="details-section">
+              <h3>
+                Precommit Quorum Certificate (Commit Proof)
+              </h3>
+              <QuorumCertificateViewer
+                qc={round.precommitQC}
+                stage="precommit"
+              />
+            </div>
+          )}
 
           {/* Vote Changes */}
           {voteChanges.length > 0 && (

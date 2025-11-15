@@ -1,6 +1,9 @@
-import React from "react";
+import React, { useState } from "react";
+import QuorumCertificateViewer from "./QuorumCertificateViewer";
 
 export default function Block({ block, nodes }) {
+  const [showQC, setShowQC] = useState(false);
+
   // Find the proposer node to check if it's Byzantine
   const proposerNode = nodes?.find(
     (n) => n.id === block.proposer
@@ -27,6 +30,19 @@ export default function Block({ block, nodes }) {
         Block #{block.height}
         {isByzantineProposer && " ⚠️"}
         {block.isMalicious && " ❌"}
+        {block.commitQC && (
+          <span
+            className="qc-badge-inline"
+            onClick={() => setShowQC(!showQC)}
+            style={{
+              cursor: "pointer",
+              marginLeft: "8px",
+              fontSize: "0.8em",
+            }}
+          >
+            🔒 QC
+          </span>
+        )}
       </h4>
       <p>
         Proposer: Node {block.proposer}
@@ -43,6 +59,14 @@ export default function Block({ block, nodes }) {
         >
           Malicious Block (Rejected)
         </p>
+      )}
+      {showQC && block.commitQC && (
+        <div style={{ marginTop: "12px" }}>
+          <QuorumCertificateViewer
+            qc={block.commitQC}
+            stage="precommit"
+          />
+        </div>
       )}
     </div>
   );

@@ -1,10 +1,10 @@
 # Tendermint Protocol Visualizer
 
-An interactive web-based visualization tool for understanding and demonstrating the Tendermint consensus protocol, featuring real-time simulation of Byzantine fault-tolerant consensus with configurable network conditions and Byzantine node behaviors.
+An interactive web-based visualization tool for understanding and demonstrating the Tendermint consensus protocol, featuring real-time simulation of Byzantine fault-tolerant consensus with configurable network conditions, Byzantine node behaviors, and **Quorum Certificate (QC) tracking**.
 
 ## Overview
 
-This project provides a comprehensive educational and testing platform for the Tendermint Byzantine Fault Tolerant (BFT) consensus protocol. It simulates a network of validator nodes reaching consensus through multiple rounds of voting (prevote and precommit phases) while visualizing liveness and safety properties in real-time.
+This project provides a comprehensive educational and testing platform for the Tendermint Byzantine Fault Tolerant (BFT) consensus protocol. It simulates a network of validator nodes reaching consensus through multiple rounds of voting (prevote and precommit phases) while visualizing liveness and safety properties in real-time. The visualizer now includes **full Quorum Certificate generation and display**, showing cryptographic proofs of validator agreement at each stage of consensus.
 
 ## Byzantine Node Simulation - Quick Reference
 
@@ -97,7 +97,37 @@ The visualizer includes **full Byzantine node simulation** to demonstrate Byzant
   - "Byzantine Test" preset with 7 nodes and 2 Byzantine nodes
   - Demonstrates BFT properties with 28% Byzantine node ratio
 
-#### 3. **Timeout Mechanism**
+#### 3. **Quorum Certificate (QC) Tracking** 🆕
+
+- **Automatic QC Generation**: Cryptographic proofs generated when voting thresholds met
+- **QC Components**:
+  - **Block Height**: Height of the block in the chain
+  - **Round Number**: Consensus round identifier
+  - **Stage**: Either "prevote" or "precommit"
+  - **Block Pointer**: Hash reference to the specific block
+  - **Validator Signatures**: Aggregated signatures from all validators who voted YES
+- **QC Types**:
+  - **Prevote QC**: Generated when ≥2/3 validators prevote YES
+  - **Precommit QC (Commit Proof)**: Generated when ≥2/3 validators precommit YES
+- **QC Visualization**:
+  - Compact QC badges in VotingBreakdown (e.g., `[PREVOTE QC] 5/7 ✓`)
+  - Full QC display in VotingDetails modal with signature tables
+  - QC status indicators in Step-by-Step mode (StateInspector)
+  - 🔒 QC badge on committed blocks (click to view commit proof)
+- **QC Features**:
+  - Real-time QC generation during consensus
+  - Historical QC tracking in `qcHistory`
+  - Simulated cryptographic signatures for each validator
+  - Threshold status (✓ Met / ✗ Not Met) with percentage
+  - Block reference with full block details
+  - Expandable signature lists showing node IDs and signatures
+- **Educational Value**:
+  - Demonstrates how supermajority agreement is cryptographically proven
+  - Shows which validators signed off on each block
+  - Illustrates the role of QCs in ensuring safety and finality
+  - Helps understand commit proofs and validator accountability
+
+#### 4. **Timeout Mechanism**
 
 - **Round Timeouts**: Configurable timeout duration for consensus rounds
 - **Exponential Backoff**: Automatic timeout escalation on consecutive failures
@@ -105,7 +135,7 @@ The visualizer includes **full Byzantine node simulation** to demonstrate Byzant
 - **Timeout Visualization**: Real-time display of timeout progress and history
 - **Adaptive Timeouts**: Multiplier-based timeout increases (default: 1.5x)
 
-#### 4. **Network Partitioning Simulation** 🆕
+#### 5. **Network Partitioning Simulation** 🆕
 
 - **Partition Types**:
   - **Single Node Isolation**: Disconnect one node from the network
@@ -131,14 +161,14 @@ The visualizer includes **full Byzantine node simulation** to demonstrate Byzant
   - Increased timeout rates during partitions
   - Liveness degradation warnings in indicators
 
-#### 5. **Network Conditions**
+#### 6. **Network Conditions**
 
 - **Configurable Latency**: Simulate network delays (0-5000ms)
 - **Packet Loss**: Simulate unreliable networks (0-100% packet loss)
 - **Node Downtime**: Random node unavailability (0-100% downtime)
 - **Response Variance**: Variable node response times
 
-#### 6. **Voting Visualization**
+#### 7. **Voting Visualization**
 
 - **Voting Breakdown**: Detailed view of prevotes and precommits per round
 - **Voting History**: Historical record of all consensus rounds
@@ -146,7 +176,7 @@ The visualizer includes **full Byzantine node simulation** to demonstrate Byzant
 - **Voting Statistics**: Aggregated metrics on voting patterns
 - **Round Details**: Expandable view for examining specific rounds
 
-#### 7. **Liveness & Safety Monitoring**
+#### 8. **Liveness & Safety Monitoring**
 
 - **Liveness Indicator**: Tracks whether the network continues making progress
 - **Safety Indicator**: Monitors for fork scenarios and conflicting commits
@@ -154,7 +184,7 @@ The visualizer includes **full Byzantine node simulation** to demonstrate Byzant
 - **Violation Detection**: Automatic detection and logging of property violations
 - **Partition Awareness**: Indicators show impact of network partitions on consensus properties
 
-#### 8. **Configuration Management**
+#### 9. **Configuration Management**
 
 - **Preset Configurations**: Pre-built scenarios (Small Network, Large Network, Byzantine Test, Partition Test)
 - **Custom Configurations**: Full control over all simulation parameters
@@ -162,7 +192,7 @@ The visualizer includes **full Byzantine node simulation** to demonstrate Byzant
 - **Import/Export**: Save and load configurations as JSON files
 - **Local Storage**: Automatic persistence of configuration settings
 
-#### 9. **Real-Time Controls**
+#### 10. **Real-Time Controls**
 
 - **Start/Stop/Reset**: Full simulation control
 - **Speed Control**: Adjustable simulation speed (0.5x to 5x)
@@ -171,7 +201,7 @@ The visualizer includes **full Byzantine node simulation** to demonstrate Byzant
 - **Interactive UI**: Responsive controls with immediate feedback
 - **Network Partition Controls**: Toggle and configure network partitions in real-time
 
-#### 10. **Step-by-Step Mode** 🆕
+#### 11. **Step-by-Step Mode** 🆕
 
 - **Educational Mode**: Advance through consensus one step at a time
 - **8 Defined Steps**:
@@ -206,7 +236,7 @@ The visualizer includes **full Byzantine node simulation** to demonstrate Byzant
   - Commit: Green
   - Complete: Gray
 
-#### 11. **Logging System**
+#### 12. **Logging System**
 
 - **Comprehensive Logs**: Detailed event logging with timestamps
 - **Log Categories**: Info, warning, error, success, and block events
@@ -297,6 +327,22 @@ BTA Project/
 ## Documentation
 
 ### Feature-Specific Guides
+
+- **[Quorum Certificate Implementation Guide](QUORUM_CERTIFICATE_IMPLEMENTATION.md)** 🆕: Complete guide to QC system
+
+  - QC data structure and generation logic
+  - Integration with consensus flow
+  - UI components and visualization
+  - Usage examples and scenarios
+  - Testing and troubleshooting
+
+- **[Quorum Certificate Quick Reference](QUORUM_CERTIFICATE_QUICK_REFERENCE.md)** 🆕: QC quick reference
+
+  - Where to find QCs in UI
+  - QC information displayed
+  - Quick actions and shortcuts
+  - Example scenarios
+  - Color coding and badges
 
 - **[Byzantine Features Guide](BYZANTINE_FEATURES_GUIDE.md)** 🆕: Complete guide to Byzantine node simulation
   - Configuration and setup
